@@ -1,0 +1,21 @@
+# ignore all files but this file
+/*
+*/:
+!/.gitignore
+
+# except config files but not test config
+!/config*/
+/config_test*/
+# ignore files in config directories
+/config*/*
+# except given files
+!/config*/car.txt
+!/config*/road.txt
+!/config*/cross.txt
+
+# code files
+!/*.h
+!/*.cpp
+
+# project files
+!CodeCraft2019.vcxproj
