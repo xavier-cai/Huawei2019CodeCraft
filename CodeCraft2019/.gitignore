@@ -18,4 +18,4 @@
 !/*.cpp
 
 # project files
-!CodeCraft2019.vcxproj
+#!CodeCraft2019.vcxproj
