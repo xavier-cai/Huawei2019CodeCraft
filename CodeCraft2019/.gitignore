@@ -1,6 +1,6 @@
 # ignore all files but this file
 /*
-*/:
+*/
 !/.gitignore
 
 # except config files but not test config
