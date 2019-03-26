@@ -3,6 +3,7 @@
 #include "scenario.h"
 #include "assert.h"
 #include "log.h"
+#include <algorithm>
 
 Simulator Simulator::Instance;
 
