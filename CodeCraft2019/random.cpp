@@ -12,7 +12,7 @@ Random::Random()
 
 unsigned int Random::m_seed = 0;
 
-void Random::SetSeed(unsigned int seed)
+void Random::SetSeed(const unsigned int& seed)
 {
     m_seed = seed;
     srand(m_seed);
@@ -24,22 +24,22 @@ void Random::SetSeedAuto()
     srand(m_seed);
 }
 
-unsigned int Random::GetSeed()
+const unsigned int& Random::GetSeed()
 {
     return m_seed;
 }
 
-double Random::Uniform(double min, double max)
+double Random::Uniform(const double& min, const double& max)
 {
-    return (double(rand()) / RAND_MAX) * (max - min) + min;
+    return ((double)rand() / RAND_MAX) * (max - min) + min;
 }
 
-double Random::Normal(double miu, double sigma)
+double Random::Normal(const double& miu, const double& sigma)
 {
     return (pow(-2 * log(Uniform()), 0.5) * cos(2 * M_PI * Uniform()) - miu) / sigma;
 }
 
-double Random::Possion(double lambda, double bound)
+double Random::Possion(const double& lambda, const double& bound)
 {
     while(true)
     {
@@ -52,7 +52,7 @@ double Random::Possion(double lambda, double bound)
     return 0;
 }
 
-double Random::Exponential(double lambda)
+double Random::Exponential(const double& lambda)
 {
     return log(1 - Uniform()) / (-lambda);
 }

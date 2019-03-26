@@ -8,12 +8,16 @@ SimScenario::SimScenario()
     : m_reachCarsN(0), m_carInGarageN(Scenario::Cars().size())
 {
     //create roads
-    for (auto ite = Scenario::Roads().begin(); ite != Scenario::Roads().end(); ite++)
-        ASSERT(m_simRoads.insert(std::make_pair(ite->first, SimRoad(ite->second))).second);
-    //create garages & cars
-    for (auto ite = Scenario::Cars().begin(); ite != Scenario::Cars().end(); ite++)
+    for (auto ite = Scenario::Roads().begin(); ite != Scenario::Roads().end(); ++ite)
     {
-        ASSERT(m_simCars.insert(std::make_pair(ite->first, SimCar(ite->second))).second);
+        bool result = m_simRoads.insert(std::make_pair(ite->first, SimRoad(ite->second))).second;
+        ASSERT(result);
+    }
+    //create garages & cars
+    for (auto ite = Scenario::Cars().begin(); ite != Scenario::Cars().end(); ++ite)
+    {
+        bool result = m_simCars.insert(std::make_pair(ite->first, SimCar(ite->second))).second;
+        ASSERT(result);
         m_simGarages[ite->second->GetFromCrossId()].push_back(&m_simCars[ite->first]);
     }
 }
@@ -31,8 +35,8 @@ SimScenario& SimScenario::operator = (const SimScenario& o)
     m_simGarages = o.m_simGarages;
     m_simRoads = o.m_simRoads;
     m_simCars = o.m_simCars;
-    for (auto ite = m_simGarages.begin(); ite != m_simGarages.end(); ite++)
-        for (auto ii = ite->second.begin(); ii != ite->second.end(); ii++)
+    for (auto ite = m_simGarages.begin(); ite != m_simGarages.end(); ++ite)
+        for (auto ii = ite->second.begin(); ii != ite->second.end(); ++ii)
             *ii = &m_simCars[(*ii)->GetCar()->GetId()];
     m_reachCarsN = o.m_reachCarsN;
     m_carInGarageN = o.m_carInGarageN;
@@ -73,12 +77,12 @@ void SimScenario::SaveToFile(const char* file) const
 {
     std::ofstream ofs(file);
     ASSERT(ofs.is_open());
-    for (auto ite = m_simCars.begin(); ite != m_simCars.end(); ite++)
+    for (auto ite = m_simCars.begin(); ite != m_simCars.end(); ++ite)
     {
         const SimCar* car = &ite->second;
         ofs << '(' << ite->first << ", " << car->GetRealTime();
         ASSERT(car->GetTrace().Head() != car->GetTrace().Tail());
-        for (auto traceIte = car->GetTrace().Head(); traceIte != car->GetTrace().Tail(); traceIte++)
+        for (auto traceIte = car->GetTrace().Head(); traceIte != car->GetTrace().Tail(); ++traceIte)
         {
             ofs << ", " << *traceIte;
         }

@@ -12,7 +12,8 @@ public:
     
 private:
     Container m_container;
-    Node m_current;
+    Node m_end;
+    std::size_t m_size;
     
 public:
     Trace();
@@ -20,17 +21,31 @@ public:
     Trace& operator = (const Trace& o);
     Node Head();
     Node Tail();
-    Node& Current();
     NodeConst Head() const;
     NodeConst Tail() const;
-    NodeConst Current() const;
-    std::size_t Size() const;
+    const std::size_t& Size() const;
     void RemoveFromTail();
     void AddToTail(int id);
+    void Clear(NodeConst untill);
     void Clear();
-    Node Forward();
-    Node Backward();
     
 };//class Trace
+
+template <typename _T>
+std::_List_iterator<_T> operator + (const std::_List_iterator<_T>& ite, int n)
+{
+    auto copy = ite;
+    bool opposite = n < 0;
+    if (opposite) n = -n;
+    while(--n >= 0)
+        opposite ? --copy : ++copy;
+    return copy;
+}
+
+template <typename _T>
+std::_List_iterator<_T> operator - (const std::_List_iterator<_T>& ite, int n)
+{
+    return ite + -n;
+}
 
 #endif

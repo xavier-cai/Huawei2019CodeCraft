@@ -14,46 +14,46 @@ public:
         bool Conflict;
 
     };//struct UpdateResult
-    
-    enum TrunType
-    {
-        LEFT,
-        DIRECT,
-        RIGHT
-    };
 
 private:
-    int m_time;
-    SimScenario& m_scenario;
-
-    static void NotifyFirstPriority(const int& time, SimScenario& scenario, SimCar* car);
-
     Simulator();
-    Simulator(const int& time, SimScenario& scenario);
-    UpdateResult UpdateSelf() const;
 
-public:
-    static void Initialize();
-    static Simulator InstanceAgent;
+    Scheduler* m_scheduler;
 
-    static Scheduler* SchedulerPtr;
-    static UpdateResult UpdateSelf(const int& time, SimScenario& scenario);
-    static bool ConflictFlag;
-    static int ScheduledCarsN;
-    static int ReachedCarsN;
+    int m_scheduledCarsN; //counter
+    int m_reachedCarsN; //counter
+    bool m_conflictFlag; //for checking conflict, reset in each schedule cycle
 
-    static Simulator::TrunType GetDirection(int from, int to);
-    static int GetRoadPeer(int to, Simulator::TrunType dir, bool opposite);
-    static int GetPositionInNextRoad(const int& time, SimScenario& scenario, SimCar* car);
-    static SimCar* PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId);
-    static SimCar* CheckFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId);
-    static bool PassCrossOrJustForward(const int& time, SimScenario& scenario, SimCar* car);
+    /* for handle callback */
+    void HandleUpdateState(const SimCar::SimState& state);
+
+    /* for notify scheduler */
+    void NotifyFirstPriority(const int& time, SimScenario& scenario, SimCar* car) const;
+
+    /* for notify simulator itself */
+    void NotifyScheduleStart();
+    void NotifyScheduleCycleStart();
+    bool GetIsDeadLock(SimScenario& scenario) const;
+    bool GetIsCompleted(SimScenario& scenario) const;
+
+    /* internal functions */
+    int GetPositionInNextRoad(const int& time, SimScenario& scenario, SimCar* car) const;
+    SimCar* PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const;
+    SimCar* CheckFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const;
+    bool PassCrossOrJustForward(const int& time, SimScenario& scenario, SimCar* car);
     void GetOutFromGarage(const int& time, SimScenario& scenario) const;
+
+    /* for logging */
     void PrintCrossState(const int& time, SimScenario& scenario, Cross* cross) const;
     void PrintDeadLock(const int& time, SimScenario& scenario) const;
-    
-};//class Simulator
 
-std::ostream& operator << (std::ostream& os, const Simulator::TrunType& turn);
+public:
+    static Simulator Instance;
+
+    void SetScheduler(Scheduler* scheduler);
+    UpdateResult Update(const int& time, SimScenario& scenario);
+    void GetDeadLockCars(const int& time, SimScenario& scenario, std::list<SimCar*>& result, int n = -1) const; //n <= 0 means get all dead lock cars
+
+};//class Simulator
 
 #endif

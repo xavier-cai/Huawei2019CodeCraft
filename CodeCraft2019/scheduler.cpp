@@ -8,15 +8,16 @@ Scheduler::Scheduler()
 
 Scheduler::~Scheduler()
 {
-    for (auto ite = m_statistic.begin(); ite != m_statistic.end(); ite++)
+    for (auto ite = m_statistic.begin(); ite != m_statistic.end(); ++ite)
     {
         LOG("Scheduler statistic : " << ite->first);
         LOG("\t Update count : " << ite->second.UpdateCount);
         if (ite->second.UpdateCount > 0)
         {
-            LOG("\t Average cost : " << ite->second.UpdateAverage);
-            LOG("\t Minimum cost : " << ite->second.UpdateMin);
-            LOG("\t Maximum cost : " << ite->second.UpdateMax);
+            LOG("\t  Total  cost : " << ite->second.UpdateAverage * ite->second.UpdateCount * 1000 << " ms");
+            LOG("\t Average cost : " << ite->second.UpdateAverage * 1000 << " ms");
+            LOG("\t Minimum cost : " << ite->second.UpdateMin * 1000 << " ms");
+            LOG("\t Maximum cost : " << ite->second.UpdateMax * 1000 << " ms");
         }
     }
     m_memoryPool.Release();
@@ -32,9 +33,15 @@ void Scheduler::Update(int& time, SimScenario& scenario)
     DoUpdate(time, scenario);
 }
 
-void Scheduler::HandleResult(int& time, Simulator::UpdateResult& result)
+void Scheduler::HandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result)
 {
-    DoHandleResult(time, result);
+    if (Log::Get<LoadState>())
+    {
+        m_loadState.Update(time, scenario);
+        if (scenario.IsComplete())
+            m_loadState.Print(scenario);
+    }
+    DoHandleResult(time, scenario, result);
 }
 
 void Scheduler::HandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car)
@@ -59,7 +66,7 @@ void Scheduler::DoHandleGetoutGarage(const int& time, SimScenario& scenario, Sim
 void Scheduler::DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car)
 { }
 
-void Scheduler::DoHandleResult(int& time, Simulator::UpdateResult& result)
+void Scheduler::DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result)
 { }
 
 void Scheduler::UpdateTimeCostBegin(const std::string& id)
@@ -84,7 +91,7 @@ void Scheduler::UpdateTimeCostEnd(const std::string& id)
         if (time > find->second.UpdateMax) find->second.UpdateMax = time;
         if (time < find->second.UpdateMin) find->second.UpdateMin = time;
     }
-    find->second.UpdateCount++;
+    ++(find->second.UpdateCount);
 }
 
 Scheduler::CostStatistic::CostStatistic()

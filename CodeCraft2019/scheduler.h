@@ -6,6 +6,7 @@
 #include "map-array.h"
 #include "memory-pool.h"
 #include "timer.h"
+#include "load-state.h"
 
 class Scheduler
 {
@@ -19,14 +20,14 @@ public:
     void Update(int& time, SimScenario& scenario); //before simulator update
     void HandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car);
     void HandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car);
-    void HandleResult(int& time, Simulator::UpdateResult& result); //after simulator update
+    void HandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result); //after simulator update
 
 protected:
     virtual void DoInitialize(SimScenario& scenario);
     virtual void DoUpdate(int& time, SimScenario& scenario);
     virtual void DoHandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car);
     virtual void DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car);
-    virtual void DoHandleResult(int& time, Simulator::UpdateResult& result);
+    virtual void DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result);
 
     MemoryPool m_memoryPool;
 
@@ -46,6 +47,9 @@ private:
         TimerHandle Handle;
     };//struct CostStatistic
     std::map<std::string, CostStatistic> m_statistic;
+    
+    /* for statistic */
+    LoadState m_loadState;
 
 };//class Scheduler
 

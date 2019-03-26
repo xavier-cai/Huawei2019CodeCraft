@@ -7,7 +7,8 @@ void SchedulerAnswer::DoInitialize(SimScenario& scenario)
 {
     m_scenario = &scenario;
     FileReader reader;
-    ASSERT(reader.Read(Config::PathResult.c_str(), &SchedulerAnswer::HandleAnswer, this));
+    bool result = reader.Read(Config::PathResult.c_str(), Callback::Create(&SchedulerAnswer::HandleAnswer, this));
+    ASSERT(result);
 }
 
 bool SchedulerAnswer::HandleAnswer(std::istream& is)
@@ -19,7 +20,7 @@ bool SchedulerAnswer::HandleAnswer(std::istream& is)
     if (c != '(')
         ASSERT(false);
     int argv[2];
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 2; ++i)
     {
         argv[i] = -1;
         is >> argv[i] >> c;
@@ -28,6 +29,8 @@ bool SchedulerAnswer::HandleAnswer(std::istream& is)
     ASSERT(argv[0] >= 0 && argv[1] >= 0);
     SimCar* car = &m_scenario->Cars()[argv[0]];
     ASSERT(car != 0);
+    if (car->GetCar()->GetId() == 10983)
+        std::cout << "";
     car->SetRealTime(argv[1]);
     int path;
     while (true)

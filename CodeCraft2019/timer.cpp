@@ -1,7 +1,7 @@
 #include "timer.h"
 #include "stdlib.h"
 
-TimerHandle::TimerHandle(clock_t record)
+TimerHandle::TimerHandle(const clock_t& record)
     : m_record(record)
 { }
 
@@ -18,7 +18,7 @@ Timer::Timer()
     : m_start(clock())
 { }
 
-double Timer::DoGetSpendTime(clock_t t) const
+double Timer::DoGetSpendTime(const clock_t& t) const
 {
     return (double)(clock() - t) / CLOCKS_PER_SEC;
 }
@@ -33,7 +33,7 @@ double Timer::DoGetSpendTime() const
     return DoGetSpendTime(m_start);
 }
 
-double Timer::DoGetLeftTime(double max) const
+double Timer::DoGetLeftTime(const double& max) const
 {
     return max - DoGetSpendTime();
 }
@@ -48,7 +48,7 @@ double Timer::GetSpendTime()
     return Instance.DoGetSpendTime();
 }
 
-double Timer::GetLeftTime(double max)
+double Timer::GetLeftTime(const double& max)
 {
     return Instance.DoGetLeftTime(max);
 }

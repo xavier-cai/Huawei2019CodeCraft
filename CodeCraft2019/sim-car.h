@@ -4,6 +4,7 @@
 #include "car.h"
 #include "road.h"
 #include "trace.h"
+#include "callback.h"
 
 class SimCar
 {
@@ -19,25 +20,35 @@ private:
     Car* m_car;
     
     int m_realTime;
-    Trace m_trace;
+    Trace* m_trace; //diffirent simulation cars (SimCar) that sharing same ID are also sharing the same trace
     bool m_isInGarage;
     bool m_isReachGoal;
-    bool m_isLockOnNextRoad;
+    bool m_isLockOnNextRoad; //if the car beacame the first priority, it can not changes its next road
+    bool m_isIgnored; //special state flag for debugging, which means it will not be updated, then cause simulation run into a dead loop
     
+    /* indicate update state of car in simulation */
     int m_lastUpdateTime;
     SimState m_simState;
     SimCar* m_waitingCar;
     
+    /* indicate position of car in simulation */
+    Trace::Node m_currentTraceNode;
     Road* m_currentRoad;
     int m_currentLane; //[1~number of lanes]
     bool m_currentDirection; //[true]: current road start->end, [false]: current road end->start
     int m_currentPosition; //[1~road length]
     
     void SetSimState(int time, SimState state);
+    /* invoked when state changed by above function */
+    static Callback::Handle<void, const SimState&> m_updateStateNotifier;
+    //static void (*m_updateStateNotifier)(const SimState&);
+    static void NotifyUpdateState(const SimState& state);
     
 public:
     SimCar();
     SimCar(Car* car);
+
+    void SetIsIgnored(const bool& ignored);
 
     Car* GetCar() const;
     void SetRealTime(int realTime);
@@ -48,11 +59,13 @@ public:
     const bool& GetIsInGarage() const;
     void LockOnNextRoad();
     const bool& GetIsLockOnNextRoad() const;
+    const bool& GetIsIgnored() const;
     
     int GetNextRoadId() const; //-1 means reaching end cross
     SimState GetSimState(int time);
     SimCar* GetWaitingCar(int time);
     
+    Trace::Node& GetCurrentTraceNode(); //iterator of the next road ID
     Road* GetCurrentRoad() const;
     int GetCurrentLane() const;
     bool GetCurrentDirection() const;
@@ -65,7 +78,7 @@ public:
     void UpdateWaiting(int time, SimCar* waitingCar);
     void UpdateReachGoal(int time);
 
-    static void SetUpdateStateNotifier(void (*notifier)(const SimState&));
+    static void SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier);
     
 };//class SimCar
 

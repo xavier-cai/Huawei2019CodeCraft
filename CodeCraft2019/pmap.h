@@ -7,6 +7,8 @@
 
 namespace std {
 
+/* if complier doesn't support pair as key in map, we need use this (e.g. in VS2012) */
+
 #define NO_CXX11_LESS_FEATURE
 
 #ifdef NO_CXX11_LESS_FEATURE

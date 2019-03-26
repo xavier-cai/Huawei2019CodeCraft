@@ -7,14 +7,14 @@ private:
     static unsigned int m_seed;
 
 public:
-    static void SetSeed(unsigned int seed);
+    static void SetSeed(const unsigned int& seed);
     static void SetSeedAuto();
-    static unsigned int GetSeed();
+    static const unsigned int& GetSeed();
     
-    static double Uniform(double min = 0.0, double max = 1.0);
-    static double Normal(double miu = 0.0, double sigma = 1.0);
-    static double Possion(double lambda = 1.0, double bound = 0.0); //bound <= 0 means no bound
-    static double Exponential(double lambda = 1.0);
+    static double Uniform(const double& min = 0.0, const double& max = 1.0);
+    static double Normal(const double& miu = 0.0, const double& sigma = 1.0);
+    static double Possion(const double& lambda = 1.0, const double& bound = 0.0); //bound <= 0 means no bound
+    static double Exponential(const double& lambda = 1.0);
     
 };//class Random
 

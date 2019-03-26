@@ -7,7 +7,7 @@ Car::Car()
     ASSERT(false);
 }
 
-Car::Car(int id, int fromCrossId, int toCrossId, int maxSpeed, int planTime)
+Car::Car(const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime)
     : m_id(id), m_fromCrossId(fromCrossId), m_toCrossId(toCrossId), m_maxSpeed(maxSpeed), m_planTime(planTime)
     , m_fromCross(0), m_toCross(0)
 { }
@@ -15,42 +15,42 @@ Car::Car(int id, int fromCrossId, int toCrossId, int maxSpeed, int planTime)
 Car::~Car()
 { }
 
-int Car::GetId() const
+const int& Car::GetId() const
 {
     return m_id;
 }
 
-int Car::GetFromCrossId() const
+const int& Car::GetFromCrossId() const
 {
     return m_fromCrossId;
 }
 
-int Car::GetToCrossId() const
+const int& Car::GetToCrossId() const
 {
     return m_toCrossId;
 }
 
-int Car::GetMaxSpeed() const
+const int& Car::GetMaxSpeed() const
 {
     return m_maxSpeed;
 }
 
-int Car::GetPlanTime() const
+const int& Car::GetPlanTime() const
 {
     return m_planTime;
 }
 
-void Car::SetFromCrossId(int id)
+void Car::SetFromCrossId(const int& id)
 {
     m_fromCrossId = id;
 
 }
-void Car::SetToCrossId(int id)
+void Car::SetToCrossId(const int& id)
 {
     m_toCrossId = id;
 }
 
-void Car::SetMaxSpeed(int speed)
+void Car::SetMaxSpeed(const int& speed)
 {
     m_maxSpeed = speed;
 }

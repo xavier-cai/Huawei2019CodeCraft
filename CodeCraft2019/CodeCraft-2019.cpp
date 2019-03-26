@@ -16,8 +16,6 @@
 #include "scheduler-floyd.h"
 #include "scheduler-answer.h"
 
-#include "simulator-impl.h"
-
 class Program
 {
 private:
@@ -25,18 +23,17 @@ private:
     {
         Config::Initialize(argc, argv);
         Scenario::Initialize();
-        Simulator::Initialize();
 
 	    SimScenario scenario;
-        Simulator::SchedulerPtr = scheduler;
+        Simulator::Instance.SetScheduler(scheduler);
 
         scheduler->Initialize(scenario);
         int time = 0;
-	    for(; true; time++) //forever until complete!
+	    for(; true; ++time) //forever until complete!
 	    {
             scheduler->Update(time, scenario);
-	        auto result = SimulatorImpl::UpdateSelf(time, scenario);
-            scheduler->HandleResult(time, result);
+            auto result = Simulator::Instance.Update(time, scenario);
+            scheduler->HandleResult(time, scenario, result);
 	        if (result.Conflict)
                 return -1;
 	        if (scenario.IsComplete())
@@ -51,7 +48,7 @@ private:
 public:
     int Run(int argc, char *argv[])
     {
-        //Log::Default(Log::ENABLE);
+        Log::Default(Log::ENABLE);
         Log::Enable<Program>();
         Random::SetSeedAuto();
         //Random::SetSeed(0);
@@ -69,17 +66,17 @@ public:
             {
                 for (int arg2 = 15; arg2 <= 30; arg2 += 1)
                 {
-                    //if (arg1 != 130 || arg2 != 22)
-                    //    continue;
+                    if (arg1 != 130 || arg2 != 22)
+                        continue;
                     SchedulerFloyd::lenthWeight = arg1 / 100.0;
                     SchedulerFloyd::carLimit = arg2 / 10.0;
                     bool success = true;
                     int total = 0;
-                    for (int i = 1; i <= 2; i++)
+                    for (int i = 1; i <= 2; ++i)
                     {
                         SchedulerFloyd scheduler;
                         //SchedulerAnswer scheduler;
-                        int cost = RunImpl(5, i == 1 ? set1 : set2, &scheduler, true);
+                        int cost = RunImpl(5, i == 1 ? set1 : set2, &scheduler, false);
                         if (cost <= 0)
                             success = false;
                         else
@@ -124,11 +121,10 @@ public:
         char* argset[] = { "", "./config-2/car.txt", "./config-2/road.txt", "./config-2/cross.txt", "./config-2/answer.txt" };
         Config::Initialize(5, argset);
         Scenario::Initialize();
-        Simulator::Initialize();
         std::cout << "input [Generator Prob], [Block Prob], [Waiting Prob] (format input%, -1 means default & end)" << std::endl;
         double input = -1;
         double* sink[3] = { &SimScenariotTester::GeneProb, &SimScenariotTester::BlockProb, &SimScenariotTester::WaitingProb };
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; ++i)
         {
             std::cin >> input;
             if(input < 0)
@@ -142,9 +138,9 @@ public:
         int time = 2;
         LOG("Simulation start from " << time);
         std::cout << "Close this after 1 second plz" << std::endl;
-	    for(; true; time++) //forever until complete!
+	    for(; true; ++time) //forever until complete!
 	    {
-	        auto result = SimulatorImpl::UpdateSelf(time, tester);
+            auto result = Simulator::Instance.Update(time, tester);
 	        if (result.Conflict)
                 return -1;
 	        if (tester.IsComplete())
@@ -162,4 +158,3 @@ int main(int argc, char *argv[])
     return program.Run(argc, argv);
     //return program.Test(argc, argv);
 }
-;

@@ -9,7 +9,7 @@ public:
     double GetSpendTime() const;
 
 private:
-    TimerHandle(clock_t record); //only Timer can create an instance
+    TimerHandle(const clock_t& record); //only Timer can create an instance
     friend class Timer;
     clock_t m_record;
 
@@ -24,17 +24,17 @@ private:
     clock_t m_start;
     double m_max;
 
-    double DoGetSpendTime(clock_t t) const;
+    double DoGetSpendTime(const clock_t& t) const;
     friend class TimerHandle;
 
     const TimerHandle DoRecord() const;
     double DoGetSpendTime() const;
-    double DoGetLeftTime(double max) const;
+    double DoGetLeftTime(const double& max) const;
 
 public:
     static const TimerHandle Record();
     static double GetSpendTime();
-    static double GetLeftTime(double max);
+    static double GetLeftTime(const double& max);
 
 };//class Timer
 

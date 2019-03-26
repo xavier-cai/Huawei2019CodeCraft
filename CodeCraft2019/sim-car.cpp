@@ -1,16 +1,14 @@
 #include "sim-car.h"
 #include "assert.h"
 #include "log.h"
+#include "tactics.h"
 
-#ifndef SIM_CAR_CPP
-#define SIM_CAR_CPP
-void (*updateStateNotifier)(const SimCar::SimState&) = 0;
-void NotifyUpdateState(const SimCar::SimState& state)
+Callback::Handle<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
+void SimCar::NotifyUpdateState(const SimCar::SimState& state)
 {
-    if(updateStateNotifier != 0)
-        updateStateNotifier(state);
+    if(!m_updateStateNotifier.IsNull())
+        m_updateStateNotifier.Invoke(state);
 }
-#endif //#ifndef SIM_CAR_CPP
 
 SimCar::SimCar()
 {
@@ -18,11 +16,18 @@ SimCar::SimCar()
 }
 
 SimCar::SimCar(Car* car)
-    : m_car(car), m_realTime(car->GetPlanTime()), m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false)
+    : m_car(car), m_realTime(car->GetPlanTime()), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
+    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_isIgnored(false)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
     ASSERT(car != 0);
+    m_currentTraceNode = m_trace->Head();
+}
+
+void SimCar::SetIsIgnored(const bool& ignored)
+{
+    m_isIgnored = ignored;
 }
 
 Car* SimCar::GetCar() const
@@ -43,12 +48,12 @@ int SimCar::GetRealTime() const
 
 Trace& SimCar::GetTrace()
 {
-    return m_trace;
+    return *m_trace;
 }
 
 const Trace& SimCar::GetTrace() const
 {
-    return m_trace;
+    return *m_trace;
 }
 
 const bool& SimCar::GetIsReachedGoal() const
@@ -71,11 +76,14 @@ const bool& SimCar::GetIsLockOnNextRoad() const
     return m_isLockOnNextRoad;
 }
 
+const bool& SimCar::GetIsIgnored() const
+{
+    return m_isIgnored;
+}
+
 int SimCar::GetNextRoadId() const
 {
-    if (m_trace.Current() == m_trace.Tail())
-        return -1;
-    return *m_trace.Current();
+    return *m_currentTraceNode;
 }
 
 void SimCar::SetSimState(int time, SimState state)
@@ -103,6 +111,11 @@ SimCar* SimCar::GetWaitingCar(int time)
     ASSERT(GetSimState(time) == WAITING);
     ASSERT(m_waitingCar != 0);
     return m_waitingCar;
+}
+
+Trace::Node& SimCar::GetCurrentTraceNode()
+{
+    return m_currentTraceNode;
 }
 
 Road* SimCar::GetCurrentRoad() const
@@ -172,8 +185,13 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
         ASSERT_MSG(startCrossId == m_car->GetFromCrossId(), "not start form the correct cross, now:" << startCrossId << " expect:" << m_car->GetFromCrossId());
         m_isInGarage = false;
     }
+    else
+    {
+        ASSERT(m_currentTraceNode != m_trace->Head());
+        ASSERT(*(m_currentTraceNode - 1) == m_currentRoad->GetId());
+    }
     ASSERT_MSG(road->GetId() == GetNextRoadId(), "not on the correct road, now:" << road->GetId() << " expect:" << GetNextRoadId());
-    m_trace.Forward();
+    ++m_currentTraceNode;
     m_currentRoad = road;
     m_currentLane = lane;
     m_currentDirection = direction;
@@ -214,7 +232,7 @@ void SimCar::UpdateReachGoal(int time)
     UpdateOnRoad(time, 0, 0, true, 0);
 }
 
-void SimCar::SetUpdateStateNotifier(void (*notifier)(const SimCar::SimState&))
+void SimCar::SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier)
 {
-    updateStateNotifier = notifier;
+    m_updateStateNotifier = notifier;
 }

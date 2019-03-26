@@ -22,24 +22,26 @@ private:
     
 public:
     Road();
-    Road(int id, int length, int limit, int lanes, int startCrossId, int endCrossId, bool isTwoWay);
+    Road(const int& id, const int& length, const int& limit, const int& lanes, const int& startCrossId, const int& endCrossId, const bool& isTwoWay);
     ~Road();
     
-    int GetId() const;
-    int GetLength() const;
-    int GetLimit() const;
-    int GetLanes() const;
-    int GetStartCrossId() const;
-    int GetEndCrossId() const;
-    bool GetIsTwoWay() const;
+    const int& GetId() const;
+    const int& GetLength() const;
+    const int& GetLimit() const;
+    const int& GetLanes() const;
+    const int& GetStartCrossId() const;
+    const int& GetEndCrossId() const;
+    const bool& GetIsTwoWay() const;
 
-    void SetLimit(int limit);
-    void SetLength(int length);
+    void SetLimit(const int& limit);
+    void SetLength(const int& length);
     void SetStartCross(Cross* cross);
     void SetEndCross(Cross* cross);
     Cross* GetStartCross() const;
     Cross* GetEndCross() const;
     Cross* GetPeerCross(Cross* peer) const;
+    bool CanStartFrom(const int& crossId) const;
+    bool CanReachTo(const int& crossId) const;
 
 };//class Road
 

@@ -19,9 +19,9 @@ SimScenariotTester::SimScenariotTester()
     int carIndex = 10000;
     Cross* cross = 0;
     int tryGetCross = 100;
-    while (tryGetCross-- > 0)
+    while (--tryGetCross > 0)
     {
-        for (auto ite = Scenario::Crosses().begin(); ite != Scenario::Crosses().end(); ite++)
+        for (auto ite = Scenario::Crosses().begin(); ite != Scenario::Crosses().end(); ++ite)
         {
             bool valid = true;
             DirectionType_Foreach(dir, 
@@ -53,15 +53,14 @@ SimScenariotTester::SimScenariotTester()
             << " limit " << road->GetRoad()->GetLimit());
     );
     
-    for (auto ite = roads.begin(); ite != roads.end(); ite++)
+    for (auto ite = roads.begin(); ite != roads.end(); ++ite)
     {
         SimRoad* road = ite->second;
         int roadId = ite->first;
-        for (int i = 1; i < road->GetRoad()->GetLanes(); i++)
+        for (int i = 1; i < road->GetRoad()->GetLanes(); ++i)
         {
             /* passing cars */
-            auto& toCar = road->GetCarsTo(i, cross->GetId());
-            for (int pos = 0; pos < 3; pos++)
+            for (int pos = 0; pos < 3; ++pos)
             {
                 if(Random::Uniform() < GeneProb)
                 {
@@ -81,17 +80,16 @@ SimScenariotTester::SimScenariotTester()
                     }
                     car->GetCar()->SetMaxSpeed(Random::Uniform(1, 9));
                     car->UpdateOnRoad(1, road->GetRoad(), i, !road->IsFromOrTo(cross->GetId()), road->GetRoad()->GetLength() - pos);
-                    toCar.push_back(car->GetCar());
+                    road->RunIn(car->GetCar(), i, road->IsFromOrTo(cross->GetId()));
                     LOG("generate passing cross car [" << car->GetCar()->GetId() << "]"
                         << " next " << (nextId == roadId ? -1 : nextId)
-                        << " dir " << (nextId == roadId ? Simulator::DIRECT : Simulator::GetDirection(roadId, nextId))
+                        << " dir " << (nextId == roadId ? Cross::DIRECT : cross->GetTurnDirection(roadId, nextId))
                         << " speed " << car->GetCar()->GetMaxSpeed()
                         );
                 }
             }
             /* block cars */
-            auto& fromCar = road->GetCarsFrom(i, cross->GetId());
-            for (int pos = 2; pos >= 1; pos--)
+            for (int pos = 2; pos >= 1; --pos)
             {
                 if(Random::Uniform() < BlockProb)
                 {
@@ -104,8 +102,8 @@ SimScenariotTester::SimScenariotTester()
                     car->GetTrace().AddToTail(roadId);
                     bool waiting = Random::Uniform() < WaitingProb;
                     car->UpdateOnRoad((waiting ? 1 : 2), road->GetRoad(), i, road->IsFromOrTo(cross->GetId()), pos);
-                    if (waiting) car->UpdateWaiting(2, car);
-                    fromCar.push_back(car->GetCar());
+                    if (waiting) car->SetIsIgnored(true);
+                    road->RunIn(car->GetCar(), i, !road->IsFromOrTo(cross->GetId()));
                     LOG("generate " << (waiting ? "waiting" : "scheduled") << " block cross car [" << car->GetCar()->GetId() << "]");
                 }
             }

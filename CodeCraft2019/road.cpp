@@ -8,7 +8,7 @@ Road::Road()
     ASSERT(false);
 }
 
-Road::Road(int id, int length, int limit, int lanes, int startCrossId, int endCrossId, bool isTwoWay)
+Road::Road(const int& id, const int& length, const int& limit, const int& lanes, const int& startCrossId, const int& endCrossId, const bool& isTwoWay)
     : m_id(id), m_length(length), m_limit(limit), m_lanes(lanes), m_startCrossId(startCrossId), m_endCrossId(endCrossId), m_isTwoWay(isTwoWay)
     , m_startCross(0), m_endCross(0)
 { }
@@ -16,47 +16,47 @@ Road::Road(int id, int length, int limit, int lanes, int startCrossId, int endCr
 Road::~Road()
 { }
 
-int Road::GetId() const
+const int& Road::GetId() const
 {
     return m_id;
 }
 
-int Road::GetLength() const
+const int& Road::GetLength() const
 {
     return m_length;
 }
 
-int Road::GetLimit() const
+const int& Road::GetLimit() const
 {
     return m_limit;
 }
 
-int Road::GetLanes() const
+const int& Road::GetLanes() const
 {
     return m_lanes;
 }
 
-int Road::GetStartCrossId() const
+const int& Road::GetStartCrossId() const
 {
     return m_startCrossId;
 }
 
-int Road::GetEndCrossId() const
+const int& Road::GetEndCrossId() const
 {
     return m_endCrossId;
 }
 
-bool Road::GetIsTwoWay() const
+const bool& Road::GetIsTwoWay() const
 {
     return m_isTwoWay;
 }
 
-void Road::SetLimit(int limit)
+void Road::SetLimit(const int& limit)
 {
     m_limit = limit;
 }
 
-void Road::SetLength(int length)
+void Road::SetLength(const int& length)
 {
     m_length = length;
 }
@@ -91,4 +91,18 @@ Cross* Road::GetPeerCross(Cross* peer) const
     bool opposite = m_endCross == peer;
     ASSERT(opposite || m_startCross == peer);
     return opposite ? m_startCross : m_endCross;
+}
+
+bool Road::CanStartFrom(const int& crossId) const
+{
+    bool isStart = crossId == m_startCrossId;
+    ASSERT(isStart || crossId == m_endCrossId);
+    return isStart || m_isTwoWay;
+}
+
+bool Road::CanReachTo(const int& crossId) const
+{
+    bool isEnd = crossId == m_endCrossId;
+    ASSERT(isEnd || crossId == m_startCrossId);
+    return isEnd || m_isTwoWay;
 }

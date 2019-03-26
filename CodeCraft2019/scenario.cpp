@@ -3,6 +3,7 @@
 #include "assert.h"
 #include "config.h"
 #include "log.h"
+#include "tactics.h"
 
 Scenario Scenario::Instance;
 
@@ -12,7 +13,7 @@ Scenario::Scenario()
 template <typename _TK, typename _TV>
 void ClearMapValue(std::map<_TK, _TV*> &map)
 {
-    for (auto ite = map.begin(); ite != map.end(); ite++)
+    for (auto ite = map.begin(); ite != map.end(); ++ite)
         delete ite->second;
     map.clear();
 }
@@ -33,7 +34,7 @@ bool HandleIntStream(std::istream& is, int argc, int* argv)
         return false;
     if (c != '(')
         ASSERT(false);
-    for (int i = 0; i < argc; i++)
+    for (int i = 0; i < argc; ++i)
     {
         argv[i] = -1;
         is >> argv[i] >> c;
@@ -91,12 +92,16 @@ void Scenario::DoInitialize()
     ClearMapValue(m_crosses);
     ClearMapValue(m_roads);
     FileReader reader;
+    bool result;
     LOG("read information of cars from " << Config::PathCar);
-    ASSERT(reader.Read(Config::PathCar.c_str(), &Scenario::HandleCar, this));
+    result = reader.Read(Config::PathCar.c_str(), Callback::Create(&Scenario::HandleCar, this));
+    ASSERT(result);
     LOG("read information of crosses from " << Config::PathCross);
-    ASSERT(reader.Read(Config::PathCross.c_str(), &Scenario::HandleCross, this));
+    result = reader.Read(Config::PathCross.c_str(), Callback::Create(&Scenario::HandleCross, this));
+    ASSERT(result);
     LOG("read information of roads from " << Config::PathRoad);
-    ASSERT(reader.Read(Config::PathRoad.c_str(), &Scenario::HandleRoad, this));
+    result = reader.Read(Config::PathRoad.c_str(), Callback::Create(&Scenario::HandleRoad, this));
+    ASSERT(result);
 
     m_carIndexer = IndexerEnhanced<int>();
     m_crossIndexer = IndexerEnhanced<int>();
@@ -112,10 +117,10 @@ void Scenario::DoInitialize()
     int index;
     index = 0;
     DirectionType_Foreach(dir,
-        m_directionIndexer.Input(dir, index++);
+        m_directionIndexer.Input(dir, ++index);
     );
     index = 0;
-    for (auto ite = m_cars.begin(); ite != m_cars.end(); ite++, index++)
+    for (auto ite = m_cars.begin(); ite != m_cars.end(); ++ite, ++index)
     {
         Car* car = ite->second;
         ASSERT(m_crosses.find(car->GetFromCrossId()) != m_crosses.end());
@@ -127,7 +132,7 @@ void Scenario::DoInitialize()
         m_carArray->ReplaceDataByIndex(index, car);
     }
     index = 0;
-    for (auto ite = m_crosses.begin(); ite != m_crosses.end(); ite++, index++)
+    for (auto ite = m_crosses.begin(); ite != m_crosses.end(); ++ite, ++index)
     {
         Cross* cross = ite->second;
         if (cross->GetNorthRoadId() != -1)
@@ -155,7 +160,7 @@ void Scenario::DoInitialize()
         m_crossArray->ReplaceDataByIndex(index, cross);
     }
     index = 0;
-    for (auto ite = m_roads.begin(); ite != m_roads.end(); ite++, index++)
+    for (auto ite = m_roads.begin(); ite != m_roads.end(); ++ite, ++index)
     {
         Road* road = ite->second;
         ASSERT(m_crosses.find(road->GetStartCrossId()) != m_crosses.end());
@@ -170,6 +175,7 @@ void Scenario::DoInitialize()
 
 void Scenario::Initialize()
 {
+    Tactics::Instance.GetTraces().clear();
     Instance.DoInitialize();
 }
 

@@ -75,7 +75,7 @@ template <typename TK, typename TV>
 MapArray<TK, TV>::~MapArray()
 {
     if (m_isManageMemory)
-        for (int i = 0; i < m_size; i++)
+        for (int i = 0; i < m_size; ++i)
             delete m_datas[i];
     delete[] m_datas;
     delete m_indexer;
@@ -86,7 +86,7 @@ void MapArray<TK, TV>::InitializeData()
 {
     m_datas = new TV*[m_size];
     if (m_isManageMemory)
-        for (int i = 0; i < m_size; i++)
+        for (int i = 0; i < m_size; ++i)
             m_datas[i] = new TV();
 }
 

@@ -16,6 +16,7 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="cross.cpp" />
     <ClCompile Include="file-reader.cpp" />
+    <ClCompile Include="load-state.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="map-array.cpp" />
     <ClCompile Include="memory-pool.cpp" />
@@ -30,19 +31,21 @@
     <ClCompile Include="sim-road.cpp" />
     <ClCompile Include="sim-scenario-tester.cpp" />
     <ClCompile Include="sim-scenario.cpp" />
-    <ClCompile Include="simulator-impl.cpp" />
     <ClCompile Include="simulator.cpp" />
+    <ClCompile Include="tactics.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="trace.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="assert.h" />
+    <ClInclude Include="callback.h" />
     <ClInclude Include="car.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="copy-object.h" />
     <ClInclude Include="cross.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="file-reader.h" />
+    <ClInclude Include="load-state.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="map-array.h" />
     <ClInclude Include="memory-pool.h" />
@@ -57,8 +60,8 @@
     <ClInclude Include="sim-road.h" />
     <ClInclude Include="sim-scenario-tester.h" />
     <ClInclude Include="sim-scenario.h" />
-    <ClInclude Include="simulator-impl.h" />
     <ClInclude Include="simulator.h" />
+    <ClInclude Include="tactics.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="pmap.h" />
     <ClInclude Include="trace.h" />

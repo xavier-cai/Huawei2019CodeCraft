@@ -7,17 +7,17 @@ void SchedulerXavier::DoInitialize(SimScenario& scenario)
     m_state = m_memoryPool.NewArray<bool**>(size);
     m_cost = m_memoryPool.NewArray<double**>(size);
     m_path = m_memoryPool.NewArray<std::list<int>**>(size);
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; ++i)
     {
         m_state[i] = m_memoryPool.NewArray<bool*>(size);
         m_cost[i] = m_memoryPool.NewArray<double*>(size);
         m_path[i] = m_memoryPool.NewArray< std::list<int>* >(size);
-        for (int j = 0; j < size; j++)
+        for (int j = 0; j < size; ++j)
         {
             m_state[i][j] = m_memoryPool.NewArray<bool>(DirectionType_Size);
             m_cost[i][j] = m_memoryPool.NewArray<double>(DirectionType_Size);
             m_path[i][j] = m_memoryPool.NewArray< std::list<int> >(DirectionType_Size);
-            for(int k = 0; k < DirectionType_Size; k++)
+            for(int k = 0; k < DirectionType_Size; ++k)
             {
                 m_state[i][j][k] = false;
                 m_cost[i][j][k] = -1;
@@ -25,14 +25,18 @@ void SchedulerXavier::DoInitialize(SimScenario& scenario)
         }
     }
     
-    for (auto iteFrom = Scenario::Crosses().begin(); iteFrom != Scenario::Crosses().end(); iteFrom++)
-        for (auto iteTo = Scenario::Crosses().begin(); iteTo != Scenario::Crosses().end(); iteTo++)
+    for (auto iteFrom = Scenario::Crosses().begin(); iteFrom != Scenario::Crosses().end(); ++iteFrom)
+    {
+        for (auto iteTo = Scenario::Crosses().begin(); iteTo != Scenario::Crosses().end(); ++iteTo)
+        {
             if (iteFrom->first != iteTo->first)
             {
                 std::set<int> bans;
                 std::list<int> path;
                 UpdatePathAndCost(iteFrom->first, iteTo->first, bans, path);
             }
+        }
+    }
 }
 
 int SchedulerXavier::UpdatePathAndCost(int current, int target, std::set<int>& bans, std::list<int>& list)
@@ -70,7 +74,7 @@ int SchedulerXavier::UpdatePathAndCost(int current, int target, std::set<int>& b
             std::cout << cross->GetId() << " to " << target << " dir " << dir << " : " << cost << std::endl;
             if(cost >= 0)
             {
-                for(auto pathIte = storage.begin(); pathIte != storage.end(); pathIte++)
+                for(auto pathIte = storage.begin(); pathIte != storage.end(); ++pathIte)
                     std::cout << *pathIte << " ";
                 std::cout << std::endl;
             }

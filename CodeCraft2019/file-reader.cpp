@@ -6,7 +6,7 @@
 FileReader::FileReader()
 { }
 
-bool FileReader::Read(const char* file, const FileReader::Invoker& invoker) const
+bool FileReader::Read(const char* file, Callback::Handle<bool, std::istream&> callback) const
 {
     std::ifstream ifs(file);
     if (!ifs.is_open())
@@ -16,7 +16,7 @@ bool FileReader::Read(const char* file, const FileReader::Invoker& invoker) cons
     {
         std::stringstream ss;
         ss << line;
-        if (!invoker.Invoke(ss))
+        if (!callback.Invoke(ss))
             break;
     }
     ifs.clear();

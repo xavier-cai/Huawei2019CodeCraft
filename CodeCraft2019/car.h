@@ -18,18 +18,18 @@ private:
     
 public:
     Car();
-    Car(int id, int fromCrossId, int toCrossId, int maxSpeed, int planTime);
+    Car(const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime);
     ~Car();
     
-    int GetId() const;
-    int GetFromCrossId() const;
-    int GetToCrossId() const;
-    int GetMaxSpeed() const;
-    int GetPlanTime() const;
+    const int& GetId() const;
+    const int& GetFromCrossId() const;
+    const int& GetToCrossId() const;
+    const int& GetMaxSpeed() const;
+    const int& GetPlanTime() const;
 
-    void SetFromCrossId(int id);
-    void SetToCrossId(int id);
-    void SetMaxSpeed(int speed);
+    void SetFromCrossId(const int& id);
+    void SetToCrossId(const int& id);
+    void SetMaxSpeed(const int& speed);
     void SetFromCross(Cross* cross);
     void SetToCross(Cross* cross);
     Cross* GetFromCross() const;

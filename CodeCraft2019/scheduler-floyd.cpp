@@ -155,8 +155,7 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
             {
                 if (!car->GetIsLockOnNextRoad())
                 {
-                    while (carTrace.Current() != carTrace.Tail())
-                        carTrace.RemoveFromTail();
+                    carTrace.Clear(car->GetCurrentTraceNode());
                     //drop back
                     if (carTrace.Size() > 0 && newTrace->size() > 0 && *newTrace->begin() == *--carTrace.Tail())
                     {
