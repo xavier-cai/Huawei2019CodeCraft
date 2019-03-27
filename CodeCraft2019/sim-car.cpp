@@ -16,13 +16,14 @@ SimCar::SimCar()
 }
 
 SimCar::SimCar(Car* car)
-    : m_car(car), m_realTime(car->GetPlanTime()), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
+    : m_car(car), m_realTime(&Tactics::Instance.GetRealTimes()[car->GetId()]), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
     , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_isIgnored(false)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
-    , m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
+    , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
     ASSERT(car != 0);
     m_currentTraceNode = m_trace->Head();
+    SetRealTime(std::max(*m_realTime, car->GetPlanTime()));
 }
 
 void SimCar::SetIsIgnored(const bool& ignored)
@@ -38,12 +39,12 @@ Car* SimCar::GetCar() const
 void SimCar::SetRealTime(int realTime)
 {
     ASSERT(realTime >= m_car->GetPlanTime());
-    m_realTime = realTime;
+    *m_realTime = realTime;
 }
 
 int SimCar::GetRealTime() const
 {
-    return m_realTime;
+    return *m_realTime;
 }
 
 Trace& SimCar::GetTrace()
@@ -113,7 +114,17 @@ SimCar* SimCar::GetWaitingCar(int time)
     return m_waitingCar;
 }
 
+const int& SimCar::GetCurrentTraceIndex() const
+{
+    return m_currentTraceIndex;
+}
+
 Trace::Node& SimCar::GetCurrentTraceNode()
+{
+    return m_currentTraceNode;
+}
+
+Trace::NodeConst SimCar::GetCurrentTraceNode() const
 {
     return m_currentTraceNode;
 }
@@ -192,6 +203,7 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
     }
     ASSERT_MSG(road->GetId() == GetNextRoadId(), "not on the correct road, now:" << road->GetId() << " expect:" << GetNextRoadId());
     ++m_currentTraceNode;
+    ++m_currentTraceIndex;
     m_currentRoad = road;
     m_currentLane = lane;
     m_currentDirection = direction;
@@ -230,6 +242,11 @@ void SimCar::UpdateWaiting(int time, SimCar* waitingCar)
 void SimCar::UpdateReachGoal(int time)
 {
     UpdateOnRoad(time, 0, 0, true, 0);
+}
+
+void SimCar::UpdateStayInGarage(int time)
+{
+    LOG("car " << GetCar()->GetId() << " can not go on the road " << GetNextRoadId() << " @" << time);
 }
 
 void SimCar::SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier)

@@ -175,7 +175,7 @@ void Scenario::DoInitialize()
 
 void Scenario::Initialize()
 {
-    Tactics::Instance.GetTraces().clear();
+    Tactics::Instance.Initialize();
     Instance.DoInitialize();
 }
 

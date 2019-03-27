@@ -33,7 +33,10 @@ private:
 	    {
             scheduler->Update(time, scenario);
             auto result = Simulator::Instance.Update(time, scenario);
+            int oldTime = time;
             scheduler->HandleResult(time, scenario, result);
+            if (time != oldTime)
+                LOG ("time back to " << time << " from " << oldTime);
 	        if (result.Conflict)
                 return -1;
 	        if (scenario.IsComplete())
@@ -48,10 +51,13 @@ private:
 public:
     int Run(int argc, char *argv[])
     {
-        Log::Default(Log::ENABLE);
+        //Log::Default(Log::ENABLE);
         Log::Enable<Program>();
-        Random::SetSeedAuto();
-        //Random::SetSeed(0);
+        //Log::Enable<SchedulerFloyd>();
+        //Log::Enable<Simulator>();
+        Log::Disable<LoadState>();
+        //Random::SetSeedAuto();
+        Random::SetSeed(0);
         LOG("Random seed : " << Random::GetSeed());
 
         //char* set1[] = { "", "./config/car.txt", "./config/road.txt", "./config/cross.txt", "./config/answer.txt" };
@@ -62,7 +68,7 @@ public:
         {
             int bestTime = -1;
             int bestArg1, bestArg2;
-            for (int arg1 = 10; arg1 <= 300; arg1 += 10)
+            for (int arg1 = 70; arg1 <= 200; arg1 += 10)
             {
                 for (int arg2 = 15; arg2 <= 30; arg2 += 1)
                 {
@@ -72,7 +78,7 @@ public:
                     SchedulerFloyd::carLimit = arg2 / 10.0;
                     bool success = true;
                     int total = 0;
-                    for (int i = 1; i <= 2; ++i)
+                    for (int i = 1; i <= 1; ++i)
                     {
                         SchedulerFloyd scheduler;
                         //SchedulerAnswer scheduler;

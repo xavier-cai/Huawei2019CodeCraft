@@ -68,6 +68,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
     int maxS2 = car->GetCar()->GetMaxSpeed() - s1;
     if (car->GetCurrentCross()->GetId() == car->GetCar()->GetToCrossId() || car->GetNextRoadId() < 0) //reach goal
         return maxS2;
+    /*
     //check if may pass the cross
     {
         bool mayPass = false;
@@ -82,6 +83,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
         if (!mayPass)
             return 0;
     }
+    */
     NotifyFirstPriority(time, scenario, car);
     int nextLimit = std::min(car->GetCar()->GetMaxSpeed(), Scenario::GetRoad(car->GetNextRoadId())->GetLimit());
     int s2 = std::min(maxS2, nextLimit - s1);
@@ -163,9 +165,11 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
     Cross* cross = car->GetCurrentCross();
     auto& carlist = road->GetCarsTo(car->GetCurrentLane(), cross->GetId());
     ASSERT(car->GetCar() == *carlist.begin());
+    int s2 = GetPositionInNextRoad(time, scenario, car);
     int nextRoadId = car->GetNextRoadId();
     if (nextRoadId == -1) //reach goal
     {
+        ASSERT(s2 > 0);
         road->RunOut(car->GetCurrentLane(), !car->GetCurrentDirection());
         car->UpdateReachGoal(time);
         scenario.ReachGoal();
@@ -452,7 +456,7 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
                     }
                     if (!goout)
                     {
-                        LOG("car " << car->GetCar()->GetId() << " can not go on the road " << roadId << " @" << time);
+                        car->UpdateStayInGarage(time);
                         car->SetRealTime(time + 1); //cheater
                     }
                     else //go out
@@ -489,10 +493,13 @@ void Simulator::GetDeadLockCars(const int& time, SimScenario& scenario, std::lis
                     if (firstPriority != 0 && firstPriority->GetSimState(time) != SimCar::SCHEDULED)
                     {
                         ASSERT(firstPriority->GetSimState(time) == SimCar::WAITING);
-                        result.push_back(firstPriority);
-                        if (n > 0)
-                            if (--n <= 0)
-                                return;
+                        if (firstPriority->GetWaitingCar(time)->GetCurrentCross()->GetId() != id)
+                        {
+                            result.push_back(firstPriority);
+                            if (n > 0)
+                                if (--n <= 0)
+                                    return;
+                        }
                     }
                 }
             }

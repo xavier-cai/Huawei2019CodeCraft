@@ -19,7 +19,7 @@ public:
 private:
     Car* m_car;
     
-    int m_realTime;
+    int* m_realTime;
     Trace* m_trace; //diffirent simulation cars (SimCar) that sharing same ID are also sharing the same trace
     bool m_isInGarage;
     bool m_isReachGoal;
@@ -32,6 +32,7 @@ private:
     SimCar* m_waitingCar;
     
     /* indicate position of car in simulation */
+    int m_currentTraceIndex;
     Trace::Node m_currentTraceNode;
     Road* m_currentRoad;
     int m_currentLane; //[1~number of lanes]
@@ -65,7 +66,9 @@ public:
     SimState GetSimState(int time);
     SimCar* GetWaitingCar(int time);
     
+    const int& GetCurrentTraceIndex() const;
     Trace::Node& GetCurrentTraceNode(); //iterator of the next road ID
+    Trace::NodeConst GetCurrentTraceNode() const;
     Road* GetCurrentRoad() const;
     int GetCurrentLane() const;
     bool GetCurrentDirection() const;
@@ -77,6 +80,7 @@ public:
     void UpdatePosition(int time, int position);
     void UpdateWaiting(int time, SimCar* waitingCar);
     void UpdateReachGoal(int time);
+    void UpdateStayInGarage(int time);
 
     static void SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier);
     
