@@ -67,7 +67,7 @@ public:
     SimCar* GetWaitingCar(int time);
     
     const int& GetCurrentTraceIndex() const;
-    Trace::Node& GetCurrentTraceNode(); //iterator of the next road ID
+    Trace::Node GetCurrentTraceNode(); //iterator of the next road ID
     Trace::NodeConst GetCurrentTraceNode() const;
     Road* GetCurrentRoad() const;
     int GetCurrentLane() const;

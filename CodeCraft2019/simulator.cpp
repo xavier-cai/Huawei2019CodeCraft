@@ -68,6 +68,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
     int maxS2 = car->GetCar()->GetMaxSpeed() - s1;
     if (car->GetCurrentCross()->GetId() == car->GetCar()->GetToCrossId() || car->GetNextRoadId() < 0) //reach goal
         return maxS2;
+    
     /*
     //check if may pass the cross
     {
@@ -84,6 +85,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
             return 0;
     }
     */
+    
     NotifyFirstPriority(time, scenario, car);
     int nextLimit = std::min(car->GetCar()->GetMaxSpeed(), Scenario::GetRoad(car->GetNextRoadId())->GetLimit());
     int s2 = std::min(maxS2, nextLimit - s1);
@@ -493,7 +495,7 @@ void Simulator::GetDeadLockCars(const int& time, SimScenario& scenario, std::lis
                     if (firstPriority != 0 && firstPriority->GetSimState(time) != SimCar::SCHEDULED)
                     {
                         ASSERT(firstPriority->GetSimState(time) == SimCar::WAITING);
-                        if (firstPriority->GetWaitingCar(time)->GetCurrentCross()->GetId() != id)
+                        //if (firstPriority->GetWaitingCar(time)->GetCurrentCross()->GetId() != crossId)
                         {
                             result.push_back(firstPriority);
                             if (n > 0)

@@ -3,6 +3,8 @@
 
 #include "scheduler.h"
 #include <list>
+#include <map>
+#include <set>
 
 class SchedulerFloyd : public Scheduler
 {
@@ -30,6 +32,7 @@ private:
     SimScenario m_backupScenario;
     int m_backupTime;
     int* m_deadLockTraceIndexes;
+    std::map< int, std::set<int> > m_deadLockMemory;
 
 };//class SchedulerFloyd
 

@@ -64,7 +64,7 @@ public:
         }
 
     public:
-        Handle(Invoker<_R, _A>* invoker)
+        Handle(Invoker<_R, _A>* invoker = 0)
             : m_invoker(invoker)
         {
             PeekInvoker();

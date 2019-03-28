@@ -19,6 +19,7 @@ Trace& Trace::operator = (const Trace& o)
         m_container.push_back(*ite);
     m_container.push_back(-1);
     m_end = --m_container.end();
+    m_size = o.m_size;
     return *this;
 }
 
@@ -57,6 +58,7 @@ void Trace::RemoveFromTail()
 
 void Trace::AddToTail(int id)
 {
+    ASSERT(id >= 0);
     *m_end = id;
     ++m_end;
     if (m_end == m_container.end())

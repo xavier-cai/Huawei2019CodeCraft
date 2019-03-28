@@ -15,6 +15,7 @@
     <ClCompile Include="CodeCraft-2019.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="cross.cpp" />
+    <ClCompile Include="dead-lock-solver.cpp" />
     <ClCompile Include="file-reader.cpp" />
     <ClCompile Include="load-state.cpp" />
     <ClCompile Include="log.cpp" />
@@ -43,6 +44,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="copy-object.h" />
     <ClInclude Include="cross.h" />
+    <ClInclude Include="dead-lock-solver.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="file-reader.h" />
     <ClInclude Include="load-state.h" />

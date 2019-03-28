@@ -29,7 +29,7 @@ void SchedulerFloyd::DoInitialize(SimScenario& scenario)
     }
 
     m_deadLockTraceIndexes = m_memoryPool.NewArray<int>(Scenario::Cars().size());
-    for(int i = 0; i < Scenario::Cars().size(); ++i)
+    for(unsigned int i = 0; i < Scenario::Cars().size(); ++i)
     {
         m_deadLockTraceIndexes[i] = 0;
     }
@@ -146,12 +146,13 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
             minpath[_c(iteStart->first)][_c(iteEnd->first)] = pathlist;
         }
     }
-    std::list<int> nullPath;
+
     for(auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ite++)
 	{
         SimCar* car = &ite->second;
         if (car->GetCar()->GetFromCrossId() != car->GetCar()->GetToCrossId()
-            && !car->GetIsReachedGoal())
+            && !car->GetIsReachedGoal()
+            && m_deadLockTraceIndexes[_a(car->GetCar()->GetId())] <= car->GetCurrentTraceIndex())
         {
             int from = car->GetCar()->GetFromCrossId();
             if (!car->GetIsInGarage() && car->GetCurrentRoad() != 0)
@@ -164,11 +165,7 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
                 carTrace.Clear();
             else
             {
-                if (car->GetIsLockOnNextRoad() || m_deadLockTraceIndexes[_a(car->GetCar()->GetId())] > car->GetCurrentTraceIndex())
-                {
-                    newTrace = &nullPath;
-                }
-                else
+                if (!car->GetIsLockOnNextRoad())
                 {
                     carTrace.Clear(car->GetCurrentTraceNode());
                     //drop back
@@ -197,22 +194,50 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
                                 }
                             }
                         }
+                        ASSERT(carTrace.Size() == 0 || (*(carTrace.Tail() - 1) != minPathId));
                         ASSERT(minPathId >= 0 && minCrossId >= 0);
                         carTrace.AddToTail(minPathId);
                         newTrace = &minpath[_c(minCrossId)][_c(to)];
                     }
                 }
             }
-            for (auto traceIte = newTrace->begin(); traceIte != newTrace->end(); traceIte++)
-                carTrace.AddToTail(*traceIte);
+
+            if (!car->GetIsLockOnNextRoad()  //will be updated
+                && carTrace.Size() != 0 && newTrace != 0 && newTrace->size() > 0 //on the road
+                && newTrace == &minpath[_c(from)][_c(to)]) //and no drop back
+                ASSERT(*(carTrace.Tail() - 1) != *newTrace->begin()); //check next jump
+            if (!car->GetIsLockOnNextRoad()) //can not update road if locked
+            {
+                for (auto traceIte = newTrace->begin(); traceIte != newTrace->end(); traceIte++)
+                {
+                    //ASSERT(carTrace.Size() == 0 || (*(carTrace.Tail() - 1) != *traceIte));
+                    carTrace.AddToTail(*traceIte);
+                }
+            }
+
+#ifdef ASSERT_ON
+            //check path valid
+            Cross* frontCross = car->GetCar()->GetFromCross();
+            int frontRoad = -1;
+            for (auto ite = carTrace.Head(); ite != carTrace.Tail(); ite++)
+            {
+                Road* road = Scenario::GetRoad(*ite);
+                ASSERT(road != 0);
+                ASSERT(road->GetId() >= 0);
+                ASSERT(road->GetId() != frontRoad);
+                ASSERT(road->CanStartFrom(frontCross->GetId()));
+                frontCross = road->GetPeerCross(frontCross);
+            }
+            ASSERT(frontCross->GetId() == car->GetCar()->GetToCrossId());
+#endif
         }
 	}
 }
 
 void SchedulerFloyd::DoHandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car)
 {
-    if (m_backupTime < time)
-        return;
+    if (time < m_backupTime)
+        ASSERT_MSG(false, time << " " << m_backupTime << " " << car->GetCar()->GetId());
     int roadId = car->GetNextRoadId();
     ASSERT(roadId >= 0);
     SimRoad* road = &scenario.Roads()[roadId];
@@ -243,7 +268,6 @@ void SchedulerFloyd::DoHandleGetoutGarage(const int& time, SimScenario& scenario
 #include "random.h"
 void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result)
 {
-    return;
     if (time == 0) //backup
     {
         m_backupScenario = scenario;
@@ -252,8 +276,10 @@ void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator:
     if (result.Conflict)
     {
         LOG("dead lock detected @" << time);
-        if (time <= m_backupTime)
+        if (time < m_backupTime)
             return; //give up
+        else if (time > m_backupTime) //another dead lock
+            m_deadLockMemory.clear(); //reset
 
         for(auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ite++)
         {
@@ -266,11 +292,16 @@ void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator:
         int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
         while (operatorCounter > 0)
         {
-            ASSERT(cars.size() > 0);
+            //ASSERT(cars.size() > 0);
+            if (cars.size() == 0)
+            {
+                LOG("unsolved dead lock");
+                return;
+            }
             for (auto ite = cars.begin(); ite != cars.end(); )
             {
                 double rng = Random::Uniform();
-                SimCar*& car = *ite;
+                SimCar* car = *ite;
                 
                 if (rng < 0.2) //change path
                 {
@@ -281,10 +312,12 @@ void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator:
                     double minPath = -1;
                     int minPathId = -1;
                     int minCrossId = -1;
+                    auto& memory = m_deadLockMemory[car->GetCar()->GetId()];
                     for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
                     {
                         Road* road = Scenario::GetCross(from)->GetRoad((Cross::DirectionType)i);
-                        if (road != 0 && road->GetId() != car->GetCurrentRoad()->GetId() && road->GetId() != nextRoad)
+                        if (road != 0 && road->GetId() != car->GetCurrentRoad()->GetId()
+                            && road->GetId() != nextRoad && memory.find(road->GetId()) == memory.end())
                         {
                             if (road->GetStartCrossId() == from ||
                             (road->GetEndCrossId() == from && road->GetIsTwoWay()))
@@ -310,6 +343,8 @@ void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator:
                         --operatorCounter;
                         LOG ("reset trace of car [" << car->GetCar()->GetId() << "] ");
                         ite = cars.erase(ite);
+                        m_deadLockTraceIndexes[_a(car->GetCar()->GetId())] = car->GetCurrentTraceIndex() + 1;
+                        memory.insert(minPathId);
                         continue;
                     }
                     else
@@ -334,7 +369,7 @@ void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator:
         }
         
         //retry
-        //m_backupTime = time;
+        m_backupTime = time;
         time = 0;
         scenario = m_backupScenario;
         result.Conflict = false;

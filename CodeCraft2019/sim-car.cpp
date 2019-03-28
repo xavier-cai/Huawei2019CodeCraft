@@ -16,14 +16,24 @@ SimCar::SimCar()
 }
 
 SimCar::SimCar(Car* car)
-    : m_car(car), m_realTime(&Tactics::Instance.GetRealTimes()[car->GetId()]), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
+    : m_car(car), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
     , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_isIgnored(false)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
     ASSERT(car != 0);
     m_currentTraceNode = m_trace->Head();
-    SetRealTime(std::max(*m_realTime, car->GetPlanTime()));
+    auto find = Tactics::Instance.GetRealTimes().find(car->GetId());
+    if (find == Tactics::Instance.GetRealTimes().end())
+    {
+        m_realTime = &Tactics::Instance.GetRealTimes()[car->GetId()];
+        *m_realTime = car->GetPlanTime();
+    }
+    else
+    {
+        m_realTime = &Tactics::Instance.GetRealTimes()[car->GetId()];
+        ASSERT(*m_realTime >= car->GetPlanTime());
+    }
 }
 
 void SimCar::SetIsIgnored(const bool& ignored)
@@ -119,7 +129,7 @@ const int& SimCar::GetCurrentTraceIndex() const
     return m_currentTraceIndex;
 }
 
-Trace::Node& SimCar::GetCurrentTraceNode()
+Trace::Node SimCar::GetCurrentTraceNode()
 {
     return m_currentTraceNode;
 }
@@ -246,7 +256,7 @@ void SimCar::UpdateReachGoal(int time)
 
 void SimCar::UpdateStayInGarage(int time)
 {
-    LOG("car " << GetCar()->GetId() << " can not go on the road " << GetNextRoadId() << " @" << time);
+    //LOG("car " << GetCar()->GetId() << " can not go on the road " << GetNextRoadId() << " @" << time);
 }
 
 void SimCar::SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier)

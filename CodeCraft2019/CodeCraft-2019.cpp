@@ -21,6 +21,10 @@ class Program
 private:
     int RunImpl(int argc, char *argv[], Scheduler* scheduler, bool save)
     {
+        //Random::SetSeedAuto();
+        Random::SetSeed(0);
+        LOG("Random seed : " << Random::GetSeed());
+
         Config::Initialize(argc, argv);
         Scenario::Initialize();
 
@@ -56,29 +60,26 @@ public:
         //Log::Enable<SchedulerFloyd>();
         //Log::Enable<Simulator>();
         Log::Disable<LoadState>();
-        //Random::SetSeedAuto();
-        Random::SetSeed(0);
-        LOG("Random seed : " << Random::GetSeed());
 
         //char* set1[] = { "", "./config/car.txt", "./config/road.txt", "./config/cross.txt", "./config/answer.txt" };
-        char* set1[] = { "", "./config-1/car.txt", "./config-1/road.txt", "./config-1/cross.txt", "./config-1/answer.txt" };
-        char* set2[] = { "", "./config-2/car.txt", "./config-2/road.txt", "./config-2/cross.txt", "./config-2/answer.txt" };
+        char* set2[] = { "", "./config-1/car.txt", "./config-1/road.txt", "./config-1/cross.txt", "./config-1/answer.txt" };
+        char* set1[] = { "", "./config-2/car.txt", "./config-2/road.txt", "./config-2/cross.txt", "./config-2/answer.txt" };
         argv = set1;
         if (true)
         {
             int bestTime = -1;
-            int bestArg1, bestArg2;
+            int bestArg1 = -1, bestArg2 = -1;
             for (int arg1 = 70; arg1 <= 200; arg1 += 10)
             {
-                for (int arg2 = 15; arg2 <= 30; arg2 += 1)
+                for (int arg2 = 17; arg2 <= 30; arg2 += 1)
                 {
-                    if (arg1 != 130 || arg2 != 22)
+                    if (arg1 != 70 || arg2 != 17)
                         continue;
                     SchedulerFloyd::lenthWeight = arg1 / 100.0;
                     SchedulerFloyd::carLimit = arg2 / 10.0;
                     bool success = true;
                     int total = 0;
-                    for (int i = 1; i <= 1; ++i)
+                    for (int i = 1; i <= 2; ++i)
                     {
                         SchedulerFloyd scheduler;
                         //SchedulerAnswer scheduler;

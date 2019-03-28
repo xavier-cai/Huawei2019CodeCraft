@@ -81,7 +81,7 @@ Cross::TurnType Cross::GetTurnDirection(const int& from, const int& to) const
     default:
         break;
     }
-    ASSERT(false);
+    ASSERT_MSG(false, "from " << from << "(" << GetDirection(from) << ") to " << to << "(" << GetDirection(to) << ")");
     return Cross::DIRECT;
 }
 
