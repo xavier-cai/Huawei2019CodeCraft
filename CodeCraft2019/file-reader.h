@@ -8,7 +8,7 @@ class FileReader
 {
 public:
     FileReader();
-    bool Read(const char* file, Callback::Handle<bool, std::istream&> callback) const;
+    bool Read(const char* file, Callback::Handle1<bool, std::istream&> callback) const;
     
 };//class FileReader
 

@@ -5,6 +5,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include "dead-lock-solver.h"
 
 class SchedulerFloyd : public Scheduler
 {
@@ -29,10 +30,8 @@ private:
     double minspeed;
     //int* crossspeed;
 
-    SimScenario m_backupScenario;
-    int m_backupTime;
-    int* m_deadLockTraceIndexes;
-    std::map< int, std::set<int> > m_deadLockMemory;
+    DeadLockSolver m_deadLockSolver;
+    int SelectBestRoad(const std::list<int>& list, int from, int to);
 
 };//class SchedulerFloyd
 

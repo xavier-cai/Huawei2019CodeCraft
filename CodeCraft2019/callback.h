@@ -36,128 +36,138 @@ private:
     virtual ~Callback() = 0;
 
 public:
-    template <typename _R, typename _A>
-    class Invoker : public RefCount< Invoker<_R, _A> >
-    {
-    public:
-        virtual ~Invoker() { };
-        virtual _R Invoke(_A a) const = 0;
-    };
 
-    template <typename _R, typename _A>
-    class Handle
-    {
-    private:
-        Invoker<_R, _A>* m_invoker;
-
-        void ReleaseInvoker() 
-        {
-            if (m_invoker != 0 && m_invoker->UnRef() <= 0)
-                delete m_invoker;
-            m_invoker = 0;
-        }
-
-        void PeekInvoker()
-        {
-            if (m_invoker != 0)
-                m_invoker->Ref();
-        }
-
-    public:
-        Handle(Invoker<_R, _A>* invoker = 0)
-            : m_invoker(invoker)
-        {
-            PeekInvoker();
-        }
-
-        Handle(const Handle& o)
-        {
-            *this = o;
-        }
-
-        Handle& operator = (const Handle& o)
-        {
-            ReleaseInvoker();
-            m_invoker = o.m_invoker;
-            PeekInvoker();
-            return *this;
-        }
-
-        ~Handle()
-        {
-            ReleaseInvoker();
-        }
-
-        bool IsNull() const
-        {
-            return m_invoker == 0;
-        }
-
-        _R Invoke(_A a) const
-        {
-            return m_invoker->Invoke(a);
-        }
-    };
-
-    template <typename _R, typename _A>
-    static Handle<_R, _A> Create(_R (*fun)(_A))
-    {
-        class InvokerImpl : public Invoker<_R, _A>
-        {
-        private:
-            _R (*m_fun)(_A);
-        public:
-            InvokerImpl(_R (*fun)(_A))
-                : m_fun(fun)
-            { }
-            virtual _R Invoke(_A a) const
-            {
-                return (*m_fun)(a);
-            }
-        } *instance = new InvokerImpl(fun);
-        return Handle<_R, _A>(instance);
+#define COMMA ,
+#define CALLBACK_DEFINE(id, TypenameList, TypeList, ArgumentsIn, ArgumentsOut) \
+    template <typename _R, TypenameList> \
+    class Invoker##id : public RefCount< Invoker##id <_R, TypeList> > \
+    { \
+    public: \
+        virtual ~Invoker##id () { }; \
+        virtual _R Invoke (ArgumentsIn) const = 0; \
+    }; \
+    \
+    template <typename _R, TypenameList> \
+    class Handle##id \
+    { \
+    private: \
+        Invoker##id <_R, TypeList>* m_invoker; \
+        \
+        void ReleaseInvoker () \
+        { \
+            if (m_invoker != 0 && m_invoker->UnRef() <= 0) \
+                delete m_invoker; \
+            m_invoker = 0; \
+        } \
+        \
+        void PeekInvoker () \
+        { \
+            if (m_invoker != 0) \
+                m_invoker->Ref(); \
+        } \
+        \
+    public: \
+        Handle##id (Invoker##id <_R, TypeList>* invoker = 0) \
+            : m_invoker(invoker) \
+        { \
+            PeekInvoker(); \
+        } \
+        \
+        Handle##id (const Handle##id & o) \
+        { \
+            *this = o; \
+        } \
+        \
+        Handle##id & operator = (const Handle##id & o) \
+        { \
+            ReleaseInvoker(); \
+            m_invoker = o.m_invoker; \
+            PeekInvoker(); \
+            return *this; \
+        } \
+        \
+        ~Handle##id () \
+        { \
+            ReleaseInvoker(); \
+        } \
+        \
+        bool IsNull () const \
+        { \
+            return m_invoker == 0; \
+        } \
+        \
+        _R Invoke (ArgumentsIn) const \
+        { \
+            return m_invoker->Invoke(ArgumentsOut); \
+        } \
+    }; \
+    \
+    template <typename _R, TypenameList> \
+    static Handle##id <_R, TypeList> Create(_R (*fun)(TypeList)) \
+    { \
+        class InvokerImpl : public Invoker##id <_R, TypeList> \
+        { \
+        private: \
+            _R (*m_fun)(TypeList); \
+        public: \
+            InvokerImpl (_R (*fun)(TypeList)) \
+                : m_fun(fun) \
+            { } \
+            virtual _R Invoke (ArgumentsIn) const \
+            { \
+                return (*m_fun)(ArgumentsOut); \
+            } \
+        } *instance = new InvokerImpl(fun); \
+        return Handle##id <_R, TypeList>(instance); \
+    } \
+    \
+    template <typename _C, typename _O, typename _R, TypenameList> \
+    static Handle##id <_R, TypeList> Create(_R (_C::*fun)(TypeList), _O* o) \
+    { \
+        class InvokerImpl : public Invoker##id <_R, TypeList> \
+        { \
+        private: \
+            _R (_C::*m_fun)(TypeList); \
+            _O* m_o; \
+        public: \
+            InvokerImpl (_R (_C::*fun)(TypeList), _O* o) \
+                : m_fun(fun), m_o(o) { } \
+            virtual _R Invoke (ArgumentsIn) const \
+            { \
+                _C& c = *m_o; \
+                return (c.*m_fun)(ArgumentsOut);\
+            } \
+        } *instance = new InvokerImpl(fun, o); \
+        return Handle##id <_R, TypeList>(instance); \
+    } \
+    \
+    template <typename _C, typename _O, typename _R, TypenameList> \
+    static Handle##id <_R, TypeList> Create(_R (_C::*fun)(TypeList) const, const _O* o) \
+    { \
+    class InvokerImpl : public Invoker##id <_R, TypeList> \
+        { \
+        private: \
+            _R (_C::*m_fun)(TypeList) const; \
+            const _O* m_o; \
+        public: \
+            InvokerImpl (_R (_C::*fun)(TypeList) const, const _O* o) \
+                : m_fun(fun), m_o(o) \
+            { } \
+            virtual _R Invoke (ArgumentsIn) const \
+            { \
+                const _C& c = *m_o; \
+                return (c.*m_fun)(ArgumentsOut); \
+            } \
+        } *instance = new InvokerImpl(fun, o); \
+        return Handle##id <_R, TypeList>(instance); \
     }
 
-    template <typename _C, typename _O, typename _R, typename _A>
-    static Handle<_R, _A> Create(_R (_C::*fun)(_A), _O* o)
-    {
-        class InvokerImpl : public Invoker<_R, _A>
-        {
-        private:
-            _R (_C::*m_fun)(_A);
-            _O* m_o;
-        public:
-            InvokerImpl(_R (_C::*fun)(_A), _O* o)
-                : m_fun(fun), m_o(o) { }
-            virtual _R Invoke(_A a) const
-            {
-                _C& c = *m_o;
-                return (c.*m_fun)(a);
-            }
-        } *instance = new InvokerImpl(fun, o);
-        return Handle<_R, _A>(instance);
-    }
+CALLBACK_DEFINE(1, typename _A, _A, _A a, a)
+CALLBACK_DEFINE(2, typename _A1 COMMA typename _A2, _A1 COMMA _A2, _A1 a1 COMMA _A2 a2, a1 COMMA a2)
+CALLBACK_DEFINE(3, typename _A1 COMMA typename _A2 COMMA typename _A3, _A1 COMMA _A2 COMMA _A3, _A1 a1 COMMA _A2 a2 COMMA _A3 a3, a1 COMMA a2 COMMA a3)
 
-    template <typename _C, typename _O, typename _R, typename _A>
-    static Handle<_R, _A> Create(_R (_C::*fun)(_A) const, const _O* o)
-    {
-        class InvokerImpl : public Invoker<_R, _A>
-        {
-        private:
-            _R (_C::*m_fun)(_A) const;
-            const _O* m_o;
-        public:
-            InvokerImpl(_R (_C::*fun)(_A) const, const _O* o)
-                : m_fun(fun), m_o(o)
-            { }
-            virtual _R Invoke(_A a) const
-            {
-                const _C& c = *m_o;
-                return (c.*m_fun)(a);
-            }
-        } *instance = new InvokerImpl(fun, o);
-        return Handle<_R, _A>(instance);
-    }
+#undef COMMA
+#undef CALLBACK_DEFINE
 
 };//class Callback
 

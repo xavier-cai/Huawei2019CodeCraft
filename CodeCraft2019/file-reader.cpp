@@ -6,7 +6,7 @@
 FileReader::FileReader()
 { }
 
-bool FileReader::Read(const char* file, Callback::Handle<bool, std::istream&> callback) const
+bool FileReader::Read(const char* file, Callback::Handle1<bool, std::istream&> callback) const
 {
     std::ifstream ifs(file);
     if (!ifs.is_open())

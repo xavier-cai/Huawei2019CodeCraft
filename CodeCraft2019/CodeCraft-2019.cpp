@@ -57,23 +57,23 @@ public:
     {
         //Log::Default(Log::ENABLE);
         Log::Enable<Program>();
-        //Log::Enable<SchedulerFloyd>();
+        //Log::Enable<DeadLockSolver>();
         //Log::Enable<Simulator>();
         Log::Disable<LoadState>();
 
         //char* set1[] = { "", "./config/car.txt", "./config/road.txt", "./config/cross.txt", "./config/answer.txt" };
-        char* set2[] = { "", "./config-1/car.txt", "./config-1/road.txt", "./config-1/cross.txt", "./config-1/answer.txt" };
-        char* set1[] = { "", "./config-2/car.txt", "./config-2/road.txt", "./config-2/cross.txt", "./config-2/answer.txt" };
+        char* set1[] = { "", "./config-1/car.txt", "./config-1/road.txt", "./config-1/cross.txt", "./config-1/answer.txt" };
+        char* set2[] = { "", "./config-2/car.txt", "./config-2/road.txt", "./config-2/cross.txt", "./config-2/answer.txt" };
         argv = set1;
         if (true)
         {
             int bestTime = -1;
             int bestArg1 = -1, bestArg2 = -1;
-            for (int arg1 = 70; arg1 <= 200; arg1 += 10)
+            for (int arg1 = 140; arg1 <= 200; arg1 += 10)
             {
-                for (int arg2 = 17; arg2 <= 30; arg2 += 1)
+                for (int arg2 = 27; arg2 <= 30; arg2 += 1)
                 {
-                    if (arg1 != 70 || arg2 != 17)
+                    if (arg1 != 140 || arg2 != 27)
                         continue;
                     SchedulerFloyd::lenthWeight = arg1 / 100.0;
                     SchedulerFloyd::carLimit = arg2 / 10.0;
@@ -81,8 +81,8 @@ public:
                     int total = 0;
                     for (int i = 1; i <= 2; ++i)
                     {
-                        SchedulerFloyd scheduler;
-                        //SchedulerAnswer scheduler;
+                        //SchedulerFloyd scheduler;
+                        SchedulerAnswer scheduler;
                         int cost = RunImpl(5, i == 1 ? set1 : set2, &scheduler, false);
                         if (cost <= 0)
                             success = false;

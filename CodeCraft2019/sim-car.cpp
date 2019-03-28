@@ -3,7 +3,7 @@
 #include "log.h"
 #include "tactics.h"
 
-Callback::Handle<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
+Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
 void SimCar::NotifyUpdateState(const SimCar::SimState& state)
 {
     if(!m_updateStateNotifier.IsNull())
@@ -259,7 +259,7 @@ void SimCar::UpdateStayInGarage(int time)
     //LOG("car " << GetCar()->GetId() << " can not go on the road " << GetNextRoadId() << " @" << time);
 }
 
-void SimCar::SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier)
+void SimCar::SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier)
 {
     m_updateStateNotifier = notifier;
 }

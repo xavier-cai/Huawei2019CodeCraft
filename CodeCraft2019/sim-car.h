@@ -41,7 +41,7 @@ private:
     
     void SetSimState(int time, SimState state);
     /* invoked when state changed by above function */
-    static Callback::Handle<void, const SimState&> m_updateStateNotifier;
+    static Callback::Handle1<void, const SimState&> m_updateStateNotifier;
     //static void (*m_updateStateNotifier)(const SimState&);
     static void NotifyUpdateState(const SimState& state);
     
@@ -82,7 +82,7 @@ public:
     void UpdateReachGoal(int time);
     void UpdateStayInGarage(int time);
 
-    static void SetUpdateStateNotifier(const Callback::Handle<void, const SimState&>& notifier);
+    static void SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier);
     
 };//class SimCar
 

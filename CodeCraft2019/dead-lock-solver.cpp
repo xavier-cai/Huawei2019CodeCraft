@@ -50,13 +50,13 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
         for (auto ite = cars.begin(); ite != cars.end(); )
         {
             double rng = Random::Uniform();
-            SimCar*& car = *ite;
+            SimCar* car = *ite;
                 
             if (rng < 0.2) //change path
             {
                 int nextRoad = (*ite)->GetNextRoadId();
                 int from = car->GetCurrentCross()->GetId();
-                //int to = car->GetCar()->GetToCrossId();
+                int to = car->GetCar()->GetToCrossId();
                 auto& carTrace = car->GetTrace();
                 auto& memory = m_deadLockMemory[car->GetCar()->GetId()];
                 std::list<int> selections;
@@ -66,7 +66,11 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
                     if (road != 0 && road->GetId() != car->GetCurrentRoad()->GetId()
                         && road->GetId() != nextRoad && memory.find(road->GetId()) == memory.end())
                     {
-                        selections.push_back(road->GetId());
+                        if (road->GetStartCrossId() == from ||
+                            (road->GetEndCrossId() == from && road->GetIsTwoWay()))
+                        {
+                            selections.push_back(road->GetId());
+                        }
                     }
                 }
                 int selected = -1;
@@ -85,7 +89,7 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
                     }
                     else
                     {
-                        selected = m_selectedRoadCallback.Invoke(selections);
+                        selected = m_selectedRoadCallback.Invoke(selections, from, to);
                     }
                 }
                 if (selected >= 0)
@@ -138,7 +142,7 @@ bool DeadLockSolver::IsGarageLockedInBackup(const int& time) const
     return time < m_deadLockTime;
 }
 
-void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle<int, const std::list<int>&>& cb)
+void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<int, const std::list<int>&, int, int>& cb)
 {
     m_selectedRoadCallback = cb;
 }
