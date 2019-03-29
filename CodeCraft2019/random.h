@@ -5,11 +5,23 @@
 
 class Random {
 private:
-    Random();
-    static unsigned int m_seed;
-    static RandomStream m_stream;
+    static Random Instance;
+    unsigned int m_seed;
+    RandomStream m_stream;
 
 public:
+    Random(unsigned int seed = 0);
+
+    void SetSeedImpl(const unsigned int& seed);
+    void SetSeedAutoImpl();
+    const unsigned int& GetSeedImpl() const;
+
+    double NextUniform(const double& min = 0.0, const double& max = 1.0);
+    double NextNormal(const double& miu = 0.0, const double& sigma = 1.0);
+    double NextPossion(const double& lambda = 1.0, const double& bound = 0.0); //bound <= 0 means no bound
+    double NextExponential(const double& lambda = 1.0);
+
+    /* static functions */
     static void SetSeed(const unsigned int& seed);
     static void SetSeedAuto();
     static const unsigned int& GetSeed();

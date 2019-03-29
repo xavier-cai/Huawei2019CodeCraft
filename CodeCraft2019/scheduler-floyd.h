@@ -29,7 +29,7 @@ private:
     //int* crossspeed;
 
     DeadLockSolver m_deadLockSolver;
-    int SelectBestRoad(const std::list<int>& list, int from, int to);
+    std::pair<int, bool> SelectBestRoad(const std::list<int>& list, int from, SimCar* car);
 
 };//class SchedulerFloyd
 
