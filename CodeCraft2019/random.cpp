@@ -12,17 +12,18 @@ Random::Random()
 { }
 
 unsigned int Random::m_seed = 0;
+RandomStream Random::m_stream(0);
 
 void Random::SetSeed(const unsigned int& seed)
 {
     m_seed = seed;
     srand(m_seed);
+    m_stream.SetValue(seed);
 }
 
 void Random::SetSeedAuto()
 {
-    m_seed = time(NULL);
-    srand(m_seed);
+    SetSeed(time(NULL));
 }
 
 const unsigned int& Random::GetSeed()
@@ -32,7 +33,8 @@ const unsigned int& Random::GetSeed()
 
 double Random::Uniform(const double& min, const double& max)
 {
-    return ((double)rand() / RAND_MAX) * (max - min) + min;
+    //return ((double)rand() / RAND_MAX) * (max - min) + min;
+    return ((double)m_stream.NextValue() / RandomStream::MaxValue) * (max - min) + min;
 }
 
 double Random::Normal(const double& miu, const double& sigma)

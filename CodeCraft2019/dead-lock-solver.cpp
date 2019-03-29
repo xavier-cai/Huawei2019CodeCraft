@@ -4,6 +4,7 @@
 #include "assert.h"
 #include "simulator.h"
 #include "random.h"
+#include <algorithm>
 
 DeadLockSolver::DeadLockSolver()
     : m_backupTime(-1), m_deadLockTime(-1), m_deadLockTraceIndexes(0)

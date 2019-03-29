@@ -21,6 +21,7 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="map-array.cpp" />
     <ClCompile Include="memory-pool.cpp" />
+    <ClCompile Include="random-stream.cpp" />
     <ClCompile Include="random.cpp" />
     <ClCompile Include="road.cpp" />
     <ClCompile Include="scenario.cpp" />
@@ -51,6 +52,7 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="map-array.h" />
     <ClInclude Include="memory-pool.h" />
+    <ClInclude Include="random-stream.h" />
     <ClInclude Include="random.h" />
     <ClInclude Include="road.h" />
     <ClInclude Include="scenario.h" />

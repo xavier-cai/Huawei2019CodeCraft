@@ -1,10 +1,13 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+#include "random-stream.h"
+
 class Random {
 private:
     Random();
     static unsigned int m_seed;
+    static RandomStream m_stream;
 
 public:
     static void SetSeed(const unsigned int& seed);

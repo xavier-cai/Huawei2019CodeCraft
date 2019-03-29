@@ -3,8 +3,6 @@
 
 #include "scheduler.h"
 #include <list>
-#include <map>
-#include <set>
 #include "dead-lock-solver.h"
 
 class SchedulerFloyd : public Scheduler
