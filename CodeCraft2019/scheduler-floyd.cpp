@@ -272,8 +272,9 @@ void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator:
     }
 }
 
-int SchedulerFloyd::SelectBestRoad(const std::list<int>& list, int from, int to)
+std::pair<int, bool> SchedulerFloyd::SelectBestRoad(const std::list<int>& list, int from, SimCar* car)
 {
+    int to = car->GetCar()->GetToCrossId();
     double minPath = -1;
     int minPathId = -1;
     for (auto ite = list.begin(); ite != list.end(); ite++)
@@ -289,5 +290,5 @@ int SchedulerFloyd::SelectBestRoad(const std::list<int>& list, int from, int to)
             minPathId = road->GetId();
         }
     }
-    return minPathId;
+    return std::make_pair(minPathId, false);
 }

@@ -75,6 +75,7 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
                     }
                 }
                 int selected = -1;
+                bool pushTrace = true;
                 if (selections.size() > 0)
                 {
                     if (m_selectedRoadCallback.IsNull())
@@ -90,13 +91,18 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
                     }
                     else
                     {
-                        selected = m_selectedRoadCallback.Invoke(selections, from, to);
+                        auto result = m_selectedRoadCallback.Invoke(selections, from, car);
+                        selected = result.first;
+                        pushTrace = !result.second;
                     }
                 }
                 if (selected >= 0)
                 {
-                    carTrace.Clear(car->GetCurrentTraceNode());
-                    carTrace.AddToTail(selected);
+                    if (pushTrace)
+                    {
+                        carTrace.Clear(car->GetCurrentTraceNode());
+                        carTrace.AddToTail(selected);
+                    }
                     --operatorCounter;
                     LOG ("reset trace of car [" << car->GetCar()->GetId() << "] ");
                     ite = cars.erase(ite);
@@ -143,7 +149,7 @@ bool DeadLockSolver::IsGarageLockedInBackup(const int& time) const
     return time < m_deadLockTime;
 }
 
-void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<int, const std::list<int>&, int, int>& cb)
+void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*>& cb)
 {
     m_selectedRoadCallback = cb;
 }

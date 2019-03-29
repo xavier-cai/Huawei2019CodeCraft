@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <utility>
 #include "memory-pool.h"
 #include "callback.h"
 
@@ -16,7 +17,7 @@ public:
     bool HandleDeadLock(int& time, SimScenario& scenario);
     bool IsCarTraceLockedInBackup(SimCar* car) const; //interface for keep trace, check it if you want to change path of car
     bool IsGarageLockedInBackup(const int& time) const; //check it when handle car get out garage 
-    void SetSelectedRoadCallback(const Callback::Handle3<int, const std::list<int>&, int, int>& cb);
+    void SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*>& cb); //return selection & is car trace handled
 
 private:
     MemoryPool m_memoryPool;
@@ -28,7 +29,7 @@ private:
     int* m_deadLockTraceIndexes; //for recover to dead lock, need to keep the trace
     std::map< int, std::set<int> > m_deadLockMemory; //car id -> used next road id
 
-    Callback::Handle3<int, const std::list<int>&, int, int> m_selectedRoadCallback; //for selecting new road to break dead lock
+    Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*> m_selectedRoadCallback; //for selecting new road to break dead lock
 
 };//class DeadLockSolver
 

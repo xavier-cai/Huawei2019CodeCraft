@@ -164,7 +164,12 @@ int SimCar::GetCurrentPosition() const
 
 Cross* SimCar::GetCurrentCross() const
 {
-    ASSERT(m_currentRoad != 0);
+    //ASSERT(m_currentRoad != 0);
+    if (m_currentRoad == 0) //still in garage
+    {
+        ASSERT(m_isInGarage);
+        return m_car->GetFromCross();
+    }
     return m_currentDirection ? m_currentRoad->GetEndCross() : m_currentRoad->GetStartCross();
 }
 
