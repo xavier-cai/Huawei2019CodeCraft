@@ -46,6 +46,12 @@ public:
     static const IndexerEnhanced<int>& GetCrossIndexer();
     static const IndexerEnhanced<int>& GetRoadIndexer();
     static const IndexerEnhanced<Cross::DirectionType>& GetDirectionIndexer();
+
+    template <typename _TV>
+    static int CalculateIndexArraySize(const std::map<int, _TV>& map)
+    {
+        return (--map.end())->first - map.begin()->first + 1;
+    }
     
 };//class Scenario
 

@@ -13,7 +13,7 @@ SchedulerFloyd::SchedulerFloyd()
 
 void SchedulerFloyd::DoInitialize(SimScenario& scenario)
 {
-    int size = Scenario::Crosses().size();
+    int size = Scenario::CalculateIndexArraySize(Scenario::Crosses());
     crosslength = m_memoryPool.NewArray<double*>(size);
     crosspath = m_memoryPool.NewArray<int*>(size);
     minpath = m_memoryPool.NewArray<std::list<int>*>(size);

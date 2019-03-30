@@ -107,11 +107,11 @@ void Scenario::DoInitialize()
     m_crossIndexer = IndexerEnhanced<int>();
     m_roadIndexer = IndexerEnhanced<int>();
     m_memoryPool.Release();
-    m_carArray = m_memoryPool.Manage(new MapArray<int, Car>((--m_cars.end())->first - m_cars.begin()->first + 1, false));
+    m_carArray = m_memoryPool.Manage(new MapArray<int, Car>(Scenario::CalculateIndexArraySize(Scenario::Cars()), false));
     m_carArray->ReplaceIndexer(IndexerMirror<int>(m_carIndexer));
-    m_crossArray = m_memoryPool.Manage(new MapArray<int, Cross>((--m_crosses.end())->first - m_crosses.begin()->first + 1, false));
+    m_crossArray = m_memoryPool.Manage(new MapArray<int, Cross>(Scenario::CalculateIndexArraySize(Scenario::Crosses()), false));
     m_crossArray->ReplaceIndexer(IndexerMirror<int>(m_crossIndexer));
-    m_roadArray = m_memoryPool.Manage(new MapArray<int, Road>((--m_roads.end())->first - m_roads.begin()->first + 1, false));
+    m_roadArray = m_memoryPool.Manage(new MapArray<int, Road>(Scenario::CalculateIndexArraySize(Scenario::Roads()), false));
     m_roadArray->ReplaceIndexer(IndexerMirror<int>(m_roadIndexer));
     
     int index;
