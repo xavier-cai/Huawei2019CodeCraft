@@ -64,6 +64,8 @@ class IndexerEnhanced : public CopyableTemplate< IndexerEnhanced<TK>, IndexerDef
 public:
     virtual void Input(const TK& key, const int& index) override;
     virtual int Output(const TK& key) const override;
+    int GetDiffer() const;
+    bool GetIsConstantDiffer() const;
 
 protected:
     bool m_isConstantDiffer;

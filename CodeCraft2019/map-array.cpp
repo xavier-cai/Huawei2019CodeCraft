@@ -177,6 +177,18 @@ int IndexerEnhanced<TK>::Output(const TK& key) const
 }
 
 template <typename TK>
+int IndexerEnhanced<TK>::GetDiffer() const
+{
+    return m_differ;
+}
+
+template <typename TK>
+bool IndexerEnhanced<TK>::GetIsConstantDiffer() const
+{
+    return m_isConstantDiffer;
+}
+
+template <typename TK>
 IndexerMirror<TK>::IndexerMirror(const Indexer<TK>& mirror)
     : m_mirror(mirror)
 { }

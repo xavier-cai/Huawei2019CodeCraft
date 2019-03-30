@@ -107,11 +107,11 @@ void Scenario::DoInitialize()
     m_crossIndexer = IndexerEnhanced<int>();
     m_roadIndexer = IndexerEnhanced<int>();
     m_memoryPool.Release();
-    m_carArray = m_memoryPool.Manage(new MapArray<int, Car>(m_cars.size(), false));
+    m_carArray = m_memoryPool.Manage(new MapArray<int, Car>((--m_cars.end())->first - m_cars.begin()->first + 1, false));
     m_carArray->ReplaceIndexer(IndexerMirror<int>(m_carIndexer));
-    m_crossArray = m_memoryPool.Manage(new MapArray<int, Cross>(m_crosses.size(), false));
+    m_crossArray = m_memoryPool.Manage(new MapArray<int, Cross>((--m_crosses.end())->first - m_crosses.begin()->first + 1, false));
     m_crossArray->ReplaceIndexer(IndexerMirror<int>(m_crossIndexer));
-    m_roadArray = m_memoryPool.Manage(new MapArray<int, Road>(m_roads.size(), false));
+    m_roadArray = m_memoryPool.Manage(new MapArray<int, Road>((--m_roads.end())->first - m_roads.begin()->first + 1, false));
     m_roadArray->ReplaceIndexer(IndexerMirror<int>(m_roadIndexer));
     
     int index;
@@ -128,6 +128,9 @@ void Scenario::DoInitialize()
         car->SetFromCross(m_crosses[car->GetFromCrossId()]);
         car->SetToCross(m_crosses[car->GetToCrossId()]);
         //indexer
+        if (index != 0)
+            for ( ; ite->first != index + m_carIndexer.GetDiffer(); ++index)
+                m_carArray->ReplaceDataByIndex(index, 0);
         m_carIndexer.Input(ite->first, index);
         m_carArray->ReplaceDataByIndex(index, car);
     }
@@ -156,6 +159,9 @@ void Scenario::DoInitialize()
             cross->SetWestRoad(m_roads[cross->GetWestRoadId()]);
         }
         //indexer
+        if (index != 0)
+            for ( ; ite->first != index + m_crossIndexer.GetDiffer(); ++index)
+                m_crossArray->ReplaceDataByIndex(index, 0);
         m_crossIndexer.Input(ite->first, index);
         m_crossArray->ReplaceDataByIndex(index, cross);
     }
@@ -168,6 +174,9 @@ void Scenario::DoInitialize()
         road->SetStartCross(m_crosses[road->GetStartCrossId()]);
         road->SetEndCross(m_crosses[road->GetEndCrossId()]);
         //indexer
+        if (index != 0)
+            for ( ; ite->first != index + m_roadIndexer.GetDiffer(); ++index)
+                m_roadArray->ReplaceDataByIndex(index, 0);
         m_roadIndexer.Input(ite->first, index);
         m_roadArray->ReplaceDataByIndex(index, road);
     }
