@@ -66,7 +66,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
     if (car->GetCurrentPosition() + currentLimit <= car->GetCurrentRoad()->GetLength()) //can not reach the next road
         return 0;
     int maxS2 = car->GetCar()->GetMaxSpeed() - s1;
-    if (car->GetCurrentCross()->GetId() == car->GetCar()->GetToCrossId() || car->GetNextRoadId() < 0) //reach goal
+    if (car->GetCurrentCross()->GetId() == car->GetCar()->GetToCrossId()) //reach goal
         return maxS2;
     
     /*
@@ -87,6 +87,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
     */
     
     NotifyFirstPriority(time, scenario, car);
+    ASSERT(car->GetNextRoadId() >= 0);
     int nextLimit = std::min(car->GetCar()->GetMaxSpeed(), Scenario::GetRoad(car->GetNextRoadId())->GetLimit());
     int s2 = std::min(maxS2, nextLimit - s1);
     if (s2 <= 0)
