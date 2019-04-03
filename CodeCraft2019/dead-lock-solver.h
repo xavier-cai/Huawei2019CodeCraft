@@ -18,6 +18,7 @@ public:
     bool IsCarTraceLockedInBackup(SimCar* car) const; //interface for keep trace, check it if you want to change path of car
     bool IsGarageLockedInBackup(const int& time) const; //check it when handle car get out garage 
     void SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*>& cb); //return selection & is car trace handled
+    const int& GetDeadLockTime() const;
 
 private:
     MemoryPool m_memoryPool;

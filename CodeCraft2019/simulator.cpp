@@ -66,7 +66,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
     if (car->GetCurrentPosition() + currentLimit <= car->GetCurrentRoad()->GetLength()) //can not reach the next road
         return 0;
     int maxS2 = car->GetCar()->GetMaxSpeed() - s1;
-    if (car->GetCurrentCross()->GetId() == car->GetCar()->GetToCrossId()) //reach goal
+    if (car->GetCurrentCross()->GetId() == car->GetCar()->GetToCrossId() && car->GetNextRoadId() < 0) //reach goal
         return maxS2;
     
     /*
@@ -170,7 +170,7 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
     ASSERT(car->GetCar() == *carlist.begin());
     int s2 = GetPositionInNextRoad(time, scenario, car);
     int nextRoadId = car->GetNextRoadId();
-    if (nextRoadId == -1) //reach goal
+    if (nextRoadId < 0) //reach goal
     {
         ASSERT(s2 > 0);
         road->RunOut(car->GetCurrentLane(), !car->GetCurrentDirection());

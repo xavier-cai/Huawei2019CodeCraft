@@ -154,3 +154,8 @@ void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<i
 {
     m_selectedRoadCallback = cb;
 }
+
+const int& DeadLockSolver::GetDeadLockTime() const
+{
+    return m_deadLockTime;
+}
