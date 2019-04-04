@@ -501,6 +501,7 @@ bool CompareCarsInGarage(const std::list<SimCar*>::iterator& a, const std::list<
 
 void Simulator::InitializeVipCarsInGarage(const int& time, SimScenario& scenario)
 {
+    m_vipCarsInGarage.clear();
     for (auto garageIte = scenario.Garages().begin(); garageIte != scenario.Garages().end(); ++garageIte)
     {
         auto& garage = garageIte->second;
