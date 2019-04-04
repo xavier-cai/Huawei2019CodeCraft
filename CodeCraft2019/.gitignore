@@ -10,6 +10,7 @@
 /config*/*
 # except given files
 !/config*/car.txt
+!/config*/cross.txt
 !/config*/road.txt
 !/config*/presetAnswer.txt
 # special files in checking directories
