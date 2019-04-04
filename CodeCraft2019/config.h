@@ -14,6 +14,7 @@ public:
     static std::string PathCar;
     static std::string PathCross;
     static std::string PathRoad;
+    static std::string PathPreset;
     static std::string PathResult;
     static const double TimeLimit;
     

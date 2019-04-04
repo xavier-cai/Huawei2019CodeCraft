@@ -2,6 +2,14 @@
 #include "assert.h"
 #include "log.h"
 #include "tactics.h"
+#include "sim-scenario.h"
+
+std::ostream& operator << (std::ostream& os, const Car& car)
+{
+    return (os << (car.GetIsPreset() ? "" : "preset ")
+        << (car.GetIsVip() ? "" : "VIP ")
+        << "car [" << car.GetId() << "]");
+}
 
 Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
 void SimCar::NotifyUpdateState(const SimCar::SimState& state)
@@ -16,8 +24,8 @@ SimCar::SimCar()
 }
 
 SimCar::SimCar(Car* car)
-    : m_car(car), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
-    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_isIgnored(false)
+    : m_car(car), m_scenario(0), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
+    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_isIgnored(false), m_startTime(-1)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
@@ -36,6 +44,11 @@ SimCar::SimCar(Car* car)
     }
 }
 
+void SimCar::SetScenario(SimScenario* scenario)
+{
+    m_scenario = scenario;
+}
+
 void SimCar::SetIsIgnored(const bool& ignored)
 {
     m_isIgnored = ignored;
@@ -48,6 +61,7 @@ Car* SimCar::GetCar() const
 
 void SimCar::SetRealTime(int realTime)
 {
+    ASSERT(!m_car->GetIsPreset());
     ASSERT(realTime >= m_car->GetPlanTime());
     *m_realTime = realTime;
 }
@@ -90,6 +104,11 @@ const bool& SimCar::GetIsLockOnNextRoad() const
 const bool& SimCar::GetIsIgnored() const
 {
     return m_isIgnored;
+}
+
+const int& SimCar::GetStartTime() const
+{
+    return m_startTime;
 }
 
 int SimCar::GetNextRoadId() const
@@ -184,7 +203,7 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
     auto nextId= GetNextRoadId(); //for checking road id
     if (nextId == -1) //reaching goal
     {
-        LOG("@" << time << " the car [" << m_car->GetId() << "] reach the goal");
+        LOG("@" << time << " the " << *m_car << " reach the goal");
         ASSERT(road == 0);
         if (m_car->GetFromCrossId() != m_car->GetToCrossId())
         {
@@ -193,9 +212,12 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
             ASSERT_MSG(currentCrossId == m_car->GetToCrossId(), "not reach the goal cross yet, now:" << currentCrossId << " expect:" << m_car->GetToCrossId());
         }
         m_isReachGoal = true;
+        ASSERT(m_startTime >= 0);
+        ASSERT(m_scenario != 0);
+        m_scenario->NotifyCarReachGoal(time, this);
         return;
     }
-    LOG("@" << time << " the car [" << m_car->GetId() << "] go on the road " << road->GetId()
+    LOG("@" << time << " the " << *m_car << " go on the road " << road->GetId()
         << " lane " << lane
         << " from " << (direction ? road->GetStartCrossId() : road->GetEndCrossId())
         << " to " << (direction ? road->GetEndCrossId() : road->GetStartCrossId())
@@ -210,6 +232,9 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
         auto startCrossId = direction ? road->GetStartCrossId() : road->GetEndCrossId();
         ASSERT_MSG(startCrossId == m_car->GetFromCrossId(), "not start form the correct cross, now:" << startCrossId << " expect:" << m_car->GetFromCrossId());
         m_isInGarage = false;
+        m_startTime = time;
+        ASSERT(m_scenario != 0);
+        m_scenario->NotifyCarGetoutOnRoad(time, this);
     }
     else
     {
@@ -227,7 +252,7 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
 
 void SimCar::UpdatePosition(int time, int position)
 {
-    LOG("@" << time << " the car [" << m_car->GetId() << "] move from " << m_currentPosition << " to " << position
+    LOG("@" << time << " the " << *m_car << " move from " << m_currentPosition << " to " << position
         << " on road " << m_currentRoad->GetId()
         << " lane " << m_currentLane
         << " dir " << m_currentDirection);
@@ -261,7 +286,7 @@ void SimCar::UpdateReachGoal(int time)
 
 void SimCar::UpdateStayInGarage(int time)
 {
-    //LOG("car " << GetCar()->GetId() << " can not go on the road " << GetNextRoadId() << " @" << time);
+    //LOG("the " << *m_car << " can not go on the road " << GetNextRoadId() << " @" << time);
 }
 
 void SimCar::SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier)

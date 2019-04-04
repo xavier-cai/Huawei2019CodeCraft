@@ -31,23 +31,7 @@ protected:
 
     MemoryPool m_memoryPool;
 
-    /* for calculating algorithm time cost */
-    void UpdateTimeCostBegin(const std::string& id);
-    void UpdateTimeCostEnd(const std::string& id);
-
 private:
-    /* for calculating algorithm time cost */
-    struct CostStatistic
-    {
-        CostStatistic();
-        int UpdateCount;
-        double UpdateAverage;
-        double UpdateMax;
-        double UpdateMin;
-        TimerHandle Handle;
-    };//struct CostStatistic
-    std::map<std::string, CostStatistic> m_statistic;
-    
     /* for statistic */
     LoadState m_loadState;
 

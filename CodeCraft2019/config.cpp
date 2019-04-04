@@ -4,8 +4,9 @@
 std::string Config::PathCar;
 std::string Config::PathCross;
 std::string Config::PathRoad;
+std::string Config::PathPreset;
 std::string Config::PathResult;
-const double Config::TimeLimit(300);
+const double Config::TimeLimit(900);
 
 Config::Config()
 {
@@ -14,10 +15,11 @@ Config::Config()
 
 void Config::Initialize(int argc, char* argv[])
 {
-    ASSERT_MSG(argc >= 5, "argc=" << argc);
+    ASSERT_MSG(argc >= 6, "argc=" << argc);
     PathCar = argv[1];
     PathRoad = argv[2];
     PathCross = argv[3];
-    PathResult = argv[4];
+    PathPreset = argv[4];
+    PathResult = argv[5];
 }
 

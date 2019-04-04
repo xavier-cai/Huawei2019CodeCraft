@@ -11,6 +11,7 @@
 #include <set>
 #include <map>
 #include "random.h"
+#include "score-calculator.h"
 
 #include "sim-scenario-tester.h"
 #include "scheduler-floyd.h"
@@ -40,63 +41,84 @@ private:
             int oldTime = time;
             scheduler->HandleResult(time, scenario, result);
             if (time != oldTime)
-                LOG ("time back to " << time << " from " << oldTime);
+                LOG ("time back to " << time << " from " << oldTime << " " << Timer::GetSpendTime());
 	        if (result.Conflict)
                 return -1;
 	        if (scenario.IsComplete())
 	            break;
 	    }
+        LOG("Program execute time : " << Timer::GetSpendTime() << "s");
         if(save)
             scenario.SaveToFile();
-        LOG("Program execute time : " << Timer::GetSpendTime() << "s");
+        
+        /* calculate score */
+        if (time >= 0 && Scenario::GetVipCarsN() > 0)
+        {
+            time = ScoreCalculator::Calculate(scenario).Score;
+        }
 	    return time;
     }
 
 public:
     int Run(int argc, char *argv[])
     {
-        //Log::Default(Log::ENABLE);
+        Random rngJitter;
+        rngJitter.SetSeedAutoImpl();
+
+        Log::Default(Log::ENABLE);
         Log::Enable<Program>();
         //Log::Enable<DeadLockSolver>();
         //Log::Enable<Simulator>();
         Log::Disable<LoadState>();
 
         //char* set1[] = { "", "./config/car.txt", "./config/road.txt", "./config/cross.txt", "./config/answer.txt" };
-        char* set1[] = { "", "./config-1/car.txt", "./config-1/road.txt", "./config-1/cross.txt", "./config-1/answer.txt" };
-        char* set2[] = { "", "./config-2/car.txt", "./config-2/road.txt", "./config-2/cross.txt", "./config-2/answer.txt" };
+        //char* set1[] = { "", "./config2-check-1/car.txt", "./config2-check-1/road.txt", "./config2-check-1/cross.txt", "./config2-check-1/presetAnswer.txt", "./config2-check-1/answer-my.txt" };
+        //char* set2[] = { "", "./config2-check-2/car.txt", "./config2-check-2/road.txt", "./config2-check-2/cross.txt", "./config2-check-2/presetAnswer.txt", "./config2-check-2/answer-my.txt" };
+        char* set1[] = { "", "./config2-1/car.txt", "./config2-1/road.txt", "./config2-1/cross.txt", "./config2-1/presetAnswer.txt", "./config2-1/answer.txt" };
+        char* set2[] = { "", "./config2-2/car.txt", "./config2-2/road.txt", "./config2-2/cross.txt", "./config2-2/presetAnswer.txt", "./config2-2/answer-laziji-147.txt" };
         argv = set1;
-        if (true)
+        if (false)
         {
             int bestTime = -1;
             int bestArg1 = -1, bestArg2 = -1;
-            for (int arg1 = 140; arg1 <= 200; arg1 += 10)
+            for (int iArg1 = 140; iArg1 <= 230; iArg1 += 10)
             {
-                for (int arg2 = 27; arg2 <= 30; arg2 += 1)
+                for (int iArg2 = 270; iArg2 <= 320; iArg2 += 10)
                 {
-                    if (arg1 != 140 || arg2 != 27)
-                        continue;
-                    SchedulerFloyd::lenthWeight = arg1 / 100.0;
-                    SchedulerFloyd::carLimit = arg2 / 10.0;
-                    bool success = true;
-                    int total = 0;
-                    for (int i = 1; i <= 2; ++i)
+                    for (int sample = 0; sample < 1; sample++)
                     {
-                        //SchedulerFloyd scheduler;
-                        SchedulerAnswer scheduler;
-                        int cost = RunImpl(5, i == 1 ? set1 : set2, &scheduler, false);
-                        if (cost <= 0)
-                            success = false;
-                        else
-                            total += cost;
-                        LOG(arg1 << " " << arg2 << " : " << cost);
-                    }
-                    if (success)
-                    {
-                        if (bestTime < 0 || total < bestTime)
+                        //if (iArg1 != 140 || iArg2 != 270)
+                        //    continue;
+                        int arg1 = iArg1;
+                        int arg2 = iArg2;
+                        if(sample != 0)
                         {
-                            bestTime = total;
-                            bestArg1 = arg1;
-                            bestArg2 = arg2;
+                            arg1 += rngJitter.NextUniform(0, 5) - 2;
+                            arg2 += rngJitter.NextUniform(0, 5) - 2;
+                        }
+                        SchedulerFloyd::lenthWeight = arg1 / 100.0;
+                        SchedulerFloyd::carLimit = arg2 / 100.0;
+                        bool success = true;
+                        int total = 0;
+                        for (int i = 2; i <= 2; ++i)
+                        {
+                            SchedulerFloyd scheduler;
+                            //SchedulerAnswer scheduler;
+                            int cost = RunImpl(6, i == 1 ? set1 : set2, &scheduler, true);
+                            if (cost <= 0)
+                                success = false;
+                            else
+                                total += cost;
+                            LOG(arg1 << " " << arg2 << " : " << cost);
+                        }
+                        if (success)
+                        {
+                            if (bestTime < 0 || total < bestTime)
+                            {
+                                bestTime = total;
+                                bestArg1 = arg1;
+                                bestArg2 = arg2;
+                            }
                         }
                     }
                 }
@@ -105,12 +127,16 @@ public:
         }
         else
         {
-            SchedulerFloyd::lenthWeight = int(10) / 100.0;
-            //SchedulerFloyd::lanesWeight = int(20) / 100.0;
-            SchedulerFloyd::carLimit = int(25) / 10.0;
-            SchedulerFloyd scheduler;
-            int ret = RunImpl(argc, argv, &scheduler, false);
-            LOG(ret);
+            for (int i = 2; i <= 2; ++i)
+            {
+                //SchedulerFloyd::lenthWeight = int(6) / 10.0;
+                //SchedulerFloyd::lanesWeight = int(20) / 100.0;
+                //SchedulerFloyd::carLimit = int(28) / 10.0;
+                //SchedulerFloyd scheduler;
+                SchedulerAnswer scheduler;
+                int ret = RunImpl(6, i == 1 ? set1 : set2, &scheduler, false);
+                LOG(ret);
+            }
         }
 
         //SchedulerAnswer schedulerAnswer;

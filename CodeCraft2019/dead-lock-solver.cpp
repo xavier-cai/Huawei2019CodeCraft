@@ -56,6 +56,12 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
                 
             if (rng < 0.2) //change path
             {
+                if ((*ite)->GetCar()->GetIsPreset())
+                {
+                    ite = cars.erase(ite);
+                    continue;
+                }
+
                 int nextRoad = (*ite)->GetNextRoadId();
                 int from = car->GetCurrentCross()->GetId();
                 int to = car->GetCar()->GetToCrossId();

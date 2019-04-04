@@ -45,13 +45,13 @@ bool HandleIntStream(std::istream& is, int argc, int* argv)
 
 bool Scenario::HandleCar(std::istream& is)
 {
-    int argc = 5;
+    int argc = 7;
     int* contents = new int[argc];
     if (HandleIntStream(is, argc, contents))
     {
         int id = contents[0];
         ASSERT(id >= 0 && m_cars.find(id) == m_cars.end());
-        m_cars[id] = new Car(id, contents[1], contents[2], contents[3], contents[4]);
+        m_cars[id] = new Car(id, contents[1], contents[2], contents[3], contents[4], contents[5] == 1, contents[6] == 1);
     }
     delete[] contents;
     return true;
@@ -85,6 +85,39 @@ bool Scenario::HandleRoad(std::istream& is)
     delete[] contents;
     return true;
 }
+
+bool Scenario::HandleAnswer(std::istream& is)
+{
+    char c;
+    is >> c;
+    if (c == '#')
+        return true;
+    if (c != '(')
+        ASSERT(false);
+    int argv[2];
+    for (int i = 0; i < 2; ++i)
+    {
+        argv[i] = -1;
+        is >> argv[i] >> c;
+        ASSERT_MSG(c == ',', "char=" << c << " position=" << i);
+    }
+    ASSERT(argv[0] >= 0 && argv[1] >= 0);
+    auto find = m_cars.find(argv[0]);
+    ASSERT(find != m_cars.end());
+    Tactics::Instance.GetRealTimes()[argv[0]] = argv[1];
+    int path;
+    while (true)
+    {
+        path = -1;
+        is >> path >> c;
+        ASSERT(c == ',' || c == ')');
+        ASSERT(path >= 0);
+        Tactics::Instance.GetTraces()[argv[0]].AddToTail(path);
+        if (c == ')')
+            break;
+    }
+    return true;
+}
     
 void Scenario::DoInitialize()
 {
@@ -102,6 +135,9 @@ void Scenario::DoInitialize()
     LOG("read information of roads from " << Config::PathRoad);
     result = reader.Read(Config::PathRoad.c_str(), Callback::Create(&Scenario::HandleRoad, this));
     ASSERT(result);
+    LOG("read information of preset from " << Config::PathPreset);
+    result = reader.Read(Config::PathPreset.c_str(), Callback::Create(&Scenario::HandleAnswer, this));
+    ASSERT(result);
 
     m_carIndexer = IndexerEnhanced<int>();
     m_crossIndexer = IndexerEnhanced<int>();
@@ -117,7 +153,7 @@ void Scenario::DoInitialize()
     int index;
     index = 0;
     DirectionType_Foreach(dir,
-        m_directionIndexer.Input(dir, ++index);
+        m_directionIndexer.Input(dir, index++);
     );
     index = 0;
     for (auto ite = m_cars.begin(); ite != m_cars.end(); ++ite, ++index)
@@ -262,4 +298,17 @@ const IndexerEnhanced<int>& Scenario::GetRoadIndexer()
 const IndexerEnhanced<Cross::DirectionType>& Scenario::GetDirectionIndexer()
 {
     return Instance.m_directionIndexer;
+}
+
+const int& Scenario::GetVipCarsN()
+{
+    static int vipCarsN = -1;
+    if (vipCarsN < 0)
+    {
+        vipCarsN = 0;
+        for (auto ite = Cars().begin(); ite != Cars().end(); ++ite)
+            if (ite->second->GetIsVip())
+                ++vipCarsN;
+    }
+    return vipCarsN;
 }

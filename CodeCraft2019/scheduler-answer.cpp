@@ -29,19 +29,20 @@ bool SchedulerAnswer::HandleAnswer(std::istream& is)
     ASSERT(argv[0] >= 0 && argv[1] >= 0);
     SimCar* car = &m_scenario->Cars()[argv[0]];
     ASSERT(car != 0);
-    if (car->GetCar()->GetId() == 10983)
-        std::cout << "";
-    car->SetRealTime(argv[1]);
-    int path;
-    while (true)
+    if (!car->GetCar()->GetIsPreset())
     {
-        path = -1;
-        is >> path >> c;
-        ASSERT(c == ',' || c == ')');
-        ASSERT(path >= 0);
-        car->GetTrace().AddToTail(path);
-        if (c == ')')
-            break;
+        car->SetRealTime(argv[1]);
+        int path;
+        while (true)
+        {
+            path = -1;
+            is >> path >> c;
+            ASSERT(c == ',' || c == ')');
+            ASSERT(path >= 0);
+            car->GetTrace().AddToTail(path);
+            if (c == ')')
+                break;
+        }
     }
     return true;
 }

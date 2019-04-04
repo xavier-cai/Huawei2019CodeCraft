@@ -1,0 +1,3 @@
+specialResult is Result{scheduleTime = 190, allScheduleTime = 81636}
+originResult is Result{scheduleTime = 622, allScheduleTime = 2718989}
+CodeCraftJudge end schedule time is 897 allScheduleTime is 3386497

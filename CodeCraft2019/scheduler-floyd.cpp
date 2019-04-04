@@ -2,6 +2,7 @@
 #include "scenario.h"
 #include "assert.h"
 #include "log.h"
+#include <algorithm>
 
 double SchedulerFloyd::lenthWeight(0.1);
 double SchedulerFloyd::lanesWeight(0.2);
@@ -148,6 +149,7 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
         SimCar* car = &ite->second;
         if (car->GetCar()->GetFromCrossId() != car->GetCar()->GetToCrossId()
             && !car->GetIsReachedGoal()
+            && !car->GetCar()->GetIsPreset()
             && !m_deadLockSolver.IsCarTraceLockedInBackup(car))
         {
             int from = car->GetCar()->GetFromCrossId();

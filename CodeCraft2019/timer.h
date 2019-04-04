@@ -2,6 +2,8 @@
 #define TIMER_H
 
 #include <time.h>
+#include <map>
+#include <string>
 
 class TimerHandle
 {
@@ -31,10 +33,30 @@ private:
     double DoGetSpendTime() const;
     double DoGetLeftTime(const double& max) const;
 
+    /* for calculating algorithm time cost */
+    struct CostStatistic
+    {
+        CostStatistic();
+        int UpdateCount;
+        double UpdateAverage;
+        double UpdateMax;
+        double UpdateMin;
+        TimerHandle Handle;
+    };//struct CostStatistic
+    std::map<std::string, CostStatistic> m_statistic;
+    void DoUpdateTimeCostBegin(const std::string& id);
+    void DoUpdateTimeCostEnd(const std::string& id);
+
 public:
+    ~Timer();
+
     static const TimerHandle Record();
     static double GetSpendTime();
     static double GetLeftTime(const double& max);
+
+     /* for calculating algorithm time cost */
+    static void UpdateTimeCostBegin(const std::string& id);
+    static void UpdateTimeCostEnd(const std::string& id);
 
 };//class Timer
 

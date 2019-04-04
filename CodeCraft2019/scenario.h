@@ -30,6 +30,7 @@ private:
     bool HandleCar(std::istream& is);
     bool HandleCross(std::istream& is);
     bool HandleRoad(std::istream& is);
+    bool HandleAnswer(std::istream& is);
     void DoInitialize();
     
 public:
@@ -46,6 +47,7 @@ public:
     static const IndexerEnhanced<int>& GetCrossIndexer();
     static const IndexerEnhanced<int>& GetRoadIndexer();
     static const IndexerEnhanced<Cross::DirectionType>& GetDirectionIndexer();
+    static const int& GetVipCarsN();
 
     template <typename _TV>
     static int CalculateIndexArraySize(const std::map<int, _TV>& map)

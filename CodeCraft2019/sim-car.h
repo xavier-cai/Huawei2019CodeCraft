@@ -6,6 +6,8 @@
 #include "trace.h"
 #include "callback.h"
 
+class SimScenario;
+
 class SimCar
 {
 public:
@@ -18,6 +20,7 @@ public:
     
 private:
     Car* m_car;
+    SimScenario* m_scenario;
     
     int* m_realTime;
     Trace* m_trace; //diffirent simulation cars (SimCar) that sharing same ID are also sharing the same trace
@@ -25,6 +28,7 @@ private:
     bool m_isReachGoal;
     bool m_isLockOnNextRoad; //if the car beacame the first priority, it can not changes its next road
     bool m_isIgnored; //special state flag for debugging, which means it will not be updated, then cause simulation run into a dead loop
+    int m_startTime; //the time go on the first road
     
     /* indicate update state of car in simulation */
     int m_lastUpdateTime;
@@ -49,6 +53,7 @@ public:
     SimCar();
     SimCar(Car* car);
 
+    void SetScenario(SimScenario* scenario);
     void SetIsIgnored(const bool& ignored);
 
     Car* GetCar() const;
@@ -61,6 +66,7 @@ public:
     void LockOnNextRoad();
     const bool& GetIsLockOnNextRoad() const;
     const bool& GetIsIgnored() const;
+    const int& GetStartTime() const;
     
     int GetNextRoadId() const; //-1 means reaching end cross
     SimState GetSimState(int time);

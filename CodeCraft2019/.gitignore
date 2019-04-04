@@ -11,7 +11,10 @@
 # except given files
 !/config*/car.txt
 !/config*/road.txt
-!/config*/cross.txt
+!/config*/presetAnswer.txt
+# special files in checking directories
+!/config*-check*/判题结果.txt
+!/config*-check*/answer.txt
 
 # code files
 !/*.h
