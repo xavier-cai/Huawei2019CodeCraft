@@ -75,7 +75,7 @@ public:
         //char* set1[] = { "", "./config2-check-1/car.txt", "./config2-check-1/road.txt", "./config2-check-1/cross.txt", "./config2-check-1/presetAnswer.txt", "./config2-check-1/answer-my.txt" };
         //char* set2[] = { "", "./config2-check-2/car.txt", "./config2-check-2/road.txt", "./config2-check-2/cross.txt", "./config2-check-2/presetAnswer.txt", "./config2-check-2/answer-my.txt" };
         char* set1[] = { "", "./config2-1/car.txt", "./config2-1/road.txt", "./config2-1/cross.txt", "./config2-1/presetAnswer.txt", "./config2-1/answer.txt" };
-        char* set2[] = { "", "./config2-2/car.txt", "./config2-2/road.txt", "./config2-2/cross.txt", "./config2-2/presetAnswer.txt", "./config2-2/answer-laziji-147.txt" };
+        char* set2[] = { "", "./config2-2/car.txt", "./config2-2/road.txt", "./config2-2/cross.txt", "./config2-2/presetAnswer.txt", "./config2-2/answer.txt" };
         argv = set1;
         if (false)
         {
