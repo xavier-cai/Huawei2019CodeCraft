@@ -454,8 +454,8 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
                     /* it's time to go! */
                     bool goout = GetCarOutFromGarage(time, scenario, car);
                     ASSERT(!goout || !car->GetCar()->GetIsVip()); //vip car is not expect get out in function
-                    if (!car->GetCar()->GetIsPreset())
-                        car->SetRealTime(time + (goout ? 0 : 1)); //cheater
+                    //if (!car->GetCar()->GetIsPreset())
+                    //    car->SetRealTime(time + (goout ? 0 : 1)); //cheater
                     if (!goout)
                     {
                         car->UpdateStayInGarage(time);
