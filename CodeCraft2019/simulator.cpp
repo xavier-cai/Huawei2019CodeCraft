@@ -93,11 +93,12 @@ SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scen
             {
                 int limit = std::min(car->GetCar()->GetMaxSpeed(), road->GetRoad()->GetLimit());
                 ASSERT(car->GetCurrentPosition() + limit > road->GetRoad()->GetLength());//first priority
-                if (ret == 0 || (car->GetCurrentPosition() > position ||
+                if (ret == 0 || ((car->GetCurrentPosition() > position && car->GetCar()->GetIsVip() == isVip) ||
                     (car->GetCar()->GetIsVip() && !isVip))) //vip power
                 {
                     ret = car;
                     position = car->GetCurrentPosition();
+                    ASSERT(isVip == car->GetCar()->GetIsVip() || !isVip);
                     isVip = car->GetCar()->GetIsVip();
                 }
             }
@@ -106,8 +107,22 @@ SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scen
     if (ret != 0)
     {
         GetPositionInNextRoad(time, scenario, ret);//for notify first priority if needed
+        ASSERT(ret->GetNextRoadId() >= 0 || ret->GetCurrentCross() == ret->GetCar()->GetToCross());
     }
     return ret;
+}
+
+bool CompareCarsPriority(SimCar* & a, SimCar* & b)
+{
+    ASSERT(a->GetCurrentCross() == b->GetCurrentCross());
+    auto dirA = a->GetCurrentTurnType();
+    auto dirB = b->GetCurrentTurnType();
+    ASSERT(dirA != dirB);
+    if (a->GetCar()->GetIsVip() != b->GetCar()->GetIsVip())
+        return a->GetCar()->GetIsVip();
+    if (dirA == Cross::DIRECT || dirB == Cross::DIRECT)
+        return dirA == Cross::DIRECT;
+    return dirA == Cross::LEFT;
 }
 
 //pass cross or just forward, return [true] means scheduled; [false] means waiting, require the car is the first one on its lane
@@ -131,57 +146,23 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
     //try pass cross
     if (nextRoadId >= 0)
     {
-        bool isVip = car->GetCar()->GetIsVip();
-        auto direction = reachGoal ? Cross::DIRECT : cross->GetTurnDirection(road->GetRoad()->GetId(), nextRoadId);
-        if (direction != Cross::DIRECT) //check DIRECT priority
-        {
-            Road* peer = cross->GetTurnDestination(nextRoadId, !Cross::DIRECT);
-            if(peer != 0 && peer->CanReachTo(cross->GetId()))
+        std::list<SimCar*> priority;
+        bool containsMe = false;
+        DirectionType_Foreach(dir,
+            Road* tmpRoad = cross->GetRoad(dir);
+            if (tmpRoad != 0 && tmpRoad->GetId() != road->GetRoad()->GetId() && tmpRoad->GetId() != nextRoadId && tmpRoad->CanReachTo(cross->GetId()))
             {
-                SimCar* checkCar = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, &scenario.Roads()[peer->GetId()], cross->GetId());
-                if (checkCar != 0 && (checkCar->GetNextRoadId() == nextRoadId || checkCar->GetCar()->GetToCrossId() == cross->GetId())) //direct or reach goal
-                {
-                    if (isVip == checkCar->GetCar()->GetIsVip() //turn priority
-                        || checkCar->GetCar()->GetIsVip()) //or i have no vip power
-                    {
-                        car->UpdateWaiting(time, checkCar);
-                        return false;
-                    }
-                }
+                SimCar* car = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, &scenario.Roads()[tmpRoad->GetId()], cross->GetId());
+                if (car != 0 && (car->GetNextRoadId() == nextRoadId || (car->GetCurrentTurnType() == Cross::DIRECT && car->GetCar()->GetToCross() == cross && cross->GetTurnDirection(car->GetCurrentRoad()->GetId(), nextRoadId) == Cross::DIRECT)))
+                    priority.push_back(car);
             }
-        }
-        if ((!isVip || direction == Cross::RIGHT) && direction != Cross::LEFT) //check LEFT priority
+        );
+        priority.push_back(car);
+        priority.sort(&CompareCarsPriority);
+        if (*priority.begin() != car)
         {
-            Road* peer = cross->GetTurnDestination(nextRoadId, !Cross::LEFT);
-            if(peer != 0 && peer->CanReachTo(cross->GetId()))
-            {
-                SimCar* checkCar = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, &scenario.Roads()[peer->GetId()], cross->GetId());
-                if (checkCar != 0 && checkCar->GetNextRoadId() == nextRoadId)
-                {
-                    if ((!isVip && checkCar->GetCar()->GetIsVip()) //it has vip power
-                        || (checkCar->GetCar()->GetIsVip() == isVip && direction == Cross::RIGHT)) //or just turn priority
-                    {
-                        car->UpdateWaiting(time, checkCar);
-                        return false;
-                    }
-                }
-            }
-        }
-        if (!isVip && direction != Cross::RIGHT) //check RIGHT priority (VIP)
-        {
-            Road* peer = cross->GetTurnDestination(nextRoadId, !Cross::RIGHT);
-            if(peer != 0 && peer->CanReachTo(cross->GetId()))
-            {
-                SimCar* checkCar = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, &scenario.Roads()[peer->GetId()], cross->GetId());
-                if (checkCar != 0 && checkCar->GetNextRoadId() == nextRoadId)
-                {
-                    if (checkCar->GetCar()->GetIsVip()) //it has vip power
-                    {
-                        car->UpdateWaiting(time, checkCar);
-                        return false;
-                    }
-                }
-            }
+            car->UpdateWaiting(time, *priority.begin());
+            return false;
         }
     }
     else
@@ -359,6 +340,7 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
                         }
                         //UpdateCarsInRoad(time, scenario, road);
                         UpdateCarsInLane(time, scenario, road, lane, opposite, true);
+                        //GetVipOutFromGarage(time, scenario);
                         GetVipOutFromGarage(time, scenario, road->GetRoad()->GetPeerCross(*crossIte)->GetId(), road->GetRoad()->GetId());
                         GetVipOutFromGarage(time, scenario, crossId, firstPriority->GetCurrentRoad()->GetId());
                         //crossConflict = false;
@@ -448,8 +430,12 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
             for (auto garageCarIte = findGarage->second.begin(); garageCarIte != findGarage->second.end(); ++garageCarIte)
             {
                 SimCar* car = *garageCarIte;
-                if (car->GetRealTime() <= time && !car->GetCar()->GetIsVip()) //can get out
+                if (car->GetRealTime() <= time) //can get out
+                {
+                    if (car->GetCar()->GetIsVip())
+                        ASSERT(!GetCarOutFromGarage(time, scenario, car));
                     cangoCars[car->GetRealTime()].push_back(garageCarIte);
+                }
             }
             for (auto cangoTimeIte = cangoCars.begin(); cangoTimeIte != cangoCars.end(); ++cangoTimeIte)
             {
@@ -493,7 +479,7 @@ bool CompareCarsInGarage(const std::list<SimCar*>::iterator& a, const std::list<
 {
     //only compare VIP cars
     //if ((*a)->GetCar()->GetIsVip() != (*b)->GetCar()->GetIsVip())
-    //    return !(*a)->GetCar()->GetIsVip();
+    //    return (*a)->GetCar()->GetIsVip();
     if ((*a)->GetRealTime() != (*b)->GetRealTime())
         return (*a)->GetRealTime() < (*b)->GetRealTime();
     return (*a)->GetCar()->GetId() < (*b)->GetCar()->GetId();
@@ -507,8 +493,12 @@ void Simulator::InitializeVipCarsInGarage(const int& time, SimScenario& scenario
         auto& garage = garageIte->second;
         auto& vipGarage = m_vipCarsInGarage[garageIte->first];
         for (auto carIte = garage.begin(); carIte != garage.end(); ++carIte)
+        {
             if ((*carIte)->GetCar()->GetIsVip() && (*carIte)->GetRealTime() <= time)
+            {
                 vipGarage.push_back(carIte);
+            }
+        }
         vipGarage.sort(&CompareCarsInGarage);
     }
 }

@@ -73,13 +73,13 @@ ScoreCalculator::ScoreResult ScoreCalculator::DoCalculate(const SimScenario& sce
         << " total " << scenario.GetTotalCompleteTime());
     LOG("vip result : score " << scenario.GetVipScheduledTime()
         << " total " << scenario.GetVipTotalCompleteTime());
-    double factor = 0
+    float factor = 0
         + (all.MaxSpeed * 1.0 / all.MinSpeed) / (vip.MaxSpeed * 1.0 / vip.MinSpeed)
         + (all.LastPlanTime * 1.0 / all.FirstPlanTime) / (vip.LastPlanTime * 1.0 / vip.FirstPlanTime)
         + all.StartDistribution.size() * 1.0 / vip.StartDistribution.size()
         + all.EndDistribution.size() * 1.0 / vip.EndDistribution.size();
-    double factorA = Scenario::Cars().size() * 1.0 / Scenario::GetVipCarsN() * 0.05 + factor * 0.2375;
-    double factorB = Scenario::Cars().size() * 1.0 / Scenario::GetVipCarsN() * 0.8 + factor * 0.05;
+    float factorA = Scenario::Cars().size() * 1.0 / Scenario::GetVipCarsN() * 0.05 + factor * 0.2375;
+    float factorB = Scenario::Cars().size() * 1.0 / Scenario::GetVipCarsN() * 0.8 + factor * 0.05;
     result.Score = factorA * scenario.GetVipScheduledTime() + scenario.GetScheduledTime() + 0.5;
     result.Total = factorB * scenario.GetVipTotalCompleteTime() + scenario.GetTotalCompleteTime() + 0.5;
     LOG("final result : score " << result.Score

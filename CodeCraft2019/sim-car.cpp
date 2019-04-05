@@ -192,6 +192,14 @@ Cross* SimCar::GetCurrentCross() const
     return m_currentDirection ? m_currentRoad->GetEndCross() : m_currentRoad->GetStartCross();
 }
 
+Cross::TurnType SimCar::GetCurrentTurnType() const
+{
+    int nextRoadId = GetNextRoadId();
+    ASSERT(nextRoadId >= 0 || GetCurrentCross() == m_car->GetToCross());
+    ASSERT(m_currentRoad != 0);
+    return nextRoadId < 0 ? Cross::DIRECT : GetCurrentCross()->GetTurnDirection(m_currentRoad->GetId(), nextRoadId);
+}
+
 void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int position)
 {
     auto state = GetSimState(time);
@@ -221,7 +229,8 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
         << " lane " << lane
         << " from " << (direction ? road->GetStartCrossId() : road->GetEndCrossId())
         << " to " << (direction ? road->GetEndCrossId() : road->GetStartCrossId())
-        << " position " << position);
+        << " position " << position
+        << (m_currentRoad == 0 ? " *" : ""));
     ASSERT(road != 0);
     ASSERT(road->GetId() == nextId);
     ASSERT(lane > 0 && lane <= road->GetLanes());

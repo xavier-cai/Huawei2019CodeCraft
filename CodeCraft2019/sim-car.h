@@ -3,6 +3,7 @@
 
 #include "car.h"
 #include "road.h"
+#include "cross.h"
 #include "trace.h"
 #include "callback.h"
 
@@ -80,6 +81,7 @@ public:
     bool GetCurrentDirection() const;
     int GetCurrentPosition() const;
     Cross* GetCurrentCross() const;
+    Cross::TurnType GetCurrentTurnType() const;
     
     /* functions for updating state */
     void UpdateOnRoad(int time, Road* road, int lane, bool direction, int position); //go on the new road

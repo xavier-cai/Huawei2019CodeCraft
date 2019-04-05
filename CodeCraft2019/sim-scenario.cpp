@@ -65,7 +65,7 @@ const int& SimScenario::GetTotalCompleteTime() const
     return m_totalCompleteTime;
 }
 
-const int& SimScenario::GetVipScheduledTime() const
+int SimScenario::GetVipScheduledTime() const
 {
     return m_vipLastReachTime - m_vipFirstPlanTime;
 }
@@ -107,11 +107,8 @@ void SimScenario::NotifyCarReachGoal(const int& time, const SimCar* car)
             m_vipFirstPlanTime = car->GetCar()->GetPlanTime();
         m_vipTotalCompleteTime += cost;
     }
-    else
-    {
-        m_scheduledTime = time;
-        m_totalCompleteTime += cost;
-    }
+    m_scheduledTime = time;
+    m_totalCompleteTime += cost;
 }
 
 void SimScenario::SaveToFile() const

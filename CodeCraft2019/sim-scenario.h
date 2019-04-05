@@ -29,7 +29,7 @@ public:
 
     const int& GetScheduledTime() const;
     const int& GetTotalCompleteTime() const;
-    const int& GetVipScheduledTime() const;
+    int GetVipScheduledTime() const;
     const int& GetVipTotalCompleteTime() const;
     
     std::map< int, std::list<SimCar*> >& Garages();
