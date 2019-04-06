@@ -153,7 +153,6 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
     if (nextRoadId >= 0)
     {
         std::list<SimCar*> priority;
-        bool containsMe = false;
         DirectionType_Foreach(dir,
             Road* tmpRoad = cross->GetRoad(dir);
             if (tmpRoad != 0 && tmpRoad->GetId() != road->GetRoad()->GetId() && tmpRoad->GetId() != nextRoadId && tmpRoad->CanReachTo(cross->GetId()))

@@ -17,7 +17,7 @@ void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
 
     int size = Scenario::CalculateIndexArraySize(Scenario::Cars());
     m_deadLockTraceIndexes = m_memoryPool.NewArray<int>(size);
-    for(unsigned int i = 0; i < size; ++i)
+    for(int i = 0; i < size; ++i)
     {
         m_deadLockTraceIndexes[i] = 0;
     }

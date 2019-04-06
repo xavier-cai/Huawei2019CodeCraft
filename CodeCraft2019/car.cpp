@@ -9,8 +9,8 @@ Car::Car()
 
 Car::Car(const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime, const bool& isVip, const bool& isPreset)
     : m_id(id), m_fromCrossId(fromCrossId), m_toCrossId(toCrossId), m_maxSpeed(maxSpeed), m_planTime(planTime)
-    , m_fromCross(0), m_toCross(0)
     , m_isVip(isVip), m_isPreset(isPreset)
+    , m_fromCross(0), m_toCross(0)
 { }
 
 Car::~Car()
