@@ -372,6 +372,7 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
     }
     if (!result.Conflict)
     {
+        GetVipOutFromGarage(time, scenario);
         GetOutFromGarage(time, scenario);
     }
     //ASSERT(result.Conflict || scheduledCarsN - reachedCarsN == scenario.GetOnRoadCarsN());
@@ -523,6 +524,7 @@ Simulator::GarageList::iterator Simulator::GetVipOutFromGarage(const int& time, 
         {
             if (roadId >= 0 && car->GetNextRoadId() != roadId)
             {
+                //ASSERT(false);//no way!
                 ++ite;
             }
             else
@@ -549,7 +551,7 @@ void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, cons
 {
     if (crossId >= 0)
     {
-        ASSERT(false);//no way!
+        //ASSERT(false);//no way!
         ASSERT(roadId >= 0);
         auto find = m_vipCarsInGarage.find(crossId);
         //ASSERT(find != m_vipCarsInGarage.end());

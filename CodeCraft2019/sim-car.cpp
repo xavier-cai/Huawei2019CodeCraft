@@ -251,12 +251,15 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
         ASSERT(*(m_currentTraceNode - 1) == m_currentRoad->GetId());
     }
     ASSERT_MSG(road->GetId() == GetNextRoadId(), "not on the correct road, now:" << road->GetId() << " expect:" << GetNextRoadId());
+    Road* oldRoad = m_currentRoad;
     ++m_currentTraceNode;
     ++m_currentTraceIndex;
     m_currentRoad = road;
     m_currentLane = lane;
     m_currentDirection = direction;
     m_currentPosition = position;
+    if (!m_updateGoOnNewRoad.IsNull())
+        m_updateGoOnNewRoad.Invoke(this, oldRoad);
 }
 
 void SimCar::UpdatePosition(int time, int position)
@@ -301,4 +304,9 @@ void SimCar::UpdateStayInGarage(int time)
 void SimCar::SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier)
 {
     m_updateStateNotifier = notifier;
+}
+
+void SimCar::SetUpdateGoOnNewRoad(const Callback::Handle2<void, const SimCar*, Road*>& notifier)
+{
+    m_updateGoOnNewRoad = notifier;
 }

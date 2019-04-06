@@ -2,10 +2,12 @@
 #include "file-reader.h"
 #include "assert.h"
 #include "config.h"
+#include "log.h"
 
 void SchedulerAnswer::DoInitialize(SimScenario& scenario)
 {
     m_scenario = &scenario;
+    LOG("read information of answer from " << Config::PathResult);
     FileReader reader;
     bool result = reader.Read(Config::PathResult.c_str(), Callback::Create(&SchedulerAnswer::HandleAnswer, this));
     ASSERT(result);

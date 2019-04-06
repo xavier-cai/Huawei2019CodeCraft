@@ -49,6 +49,8 @@ private:
     static Callback::Handle1<void, const SimState&> m_updateStateNotifier;
     //static void (*m_updateStateNotifier)(const SimState&);
     static void NotifyUpdateState(const SimState& state);
+    /* notify load changed */
+    static Callback::Handle2<void, const SimCar*, Road*> m_updateGoOnNewRoad;
     
 public:
     SimCar();
@@ -91,6 +93,7 @@ public:
     void UpdateStayInGarage(int time);
 
     static void SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier);
+    static void SetUpdateGoOnNewRoad(const Callback::Handle2<void, const SimCar*, Road*>& notifier);
     
 };//class SimCar
 
