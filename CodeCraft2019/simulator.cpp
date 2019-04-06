@@ -9,6 +9,7 @@ Simulator Simulator::Instance;
 
 Simulator::Simulator()
     : m_scheduler(0), m_scheduledCarsN(0), m_reachedCarsN(0), m_conflictFlag(false)
+    , m_isEnableCheater(true)
 {
     SimCar::SetUpdateStateNotifier(Callback::Create(&Simulator::HandleUpdateState, this));
 }
@@ -16,6 +17,11 @@ Simulator::Simulator()
 void Simulator::SetScheduler(Scheduler* scheduler)
 {
     m_scheduler = scheduler;
+}
+
+void Simulator::SetEnableCheater(const bool& enable)
+{
+    Instance.m_isEnableCheater = enable;
 }
 
 void Simulator::HandleUpdateState(const SimCar::SimState& state)
@@ -379,7 +385,7 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
     return result;
 }
 
-bool GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car)
+bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const
 {
     bool goout = false;
     int roadId = car->GetNextRoadId();
@@ -396,11 +402,7 @@ bool GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car)
             ASSERT(car->GetCar()->GetIsVip() || lastCar->GetSimState(time) == SimCar::SCHEDULED);
             ASSERT(lastCar->GetCurrentPosition() > 0);
             if (lastCar->GetSimState(time) != SimCar::SCHEDULED && lastCar->GetCurrentPosition() <= maxLength)
-            {
-                //need wait
-                goout = false;
-                break;
-            }
+                return false; //need wait
             //try next lane
             if (lastCar->GetSimState(time) == SimCar::SCHEDULED && lastCar->GetCurrentPosition() == 1)
                 continue;
@@ -413,6 +415,8 @@ bool GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car)
         goout = true;
         break;
     }
+    if (!car->GetCar()->GetIsPreset() && m_isEnableCheater)
+        car->SetRealTime(time + (goout ? 0 : 1));
     return goout;
 }
 

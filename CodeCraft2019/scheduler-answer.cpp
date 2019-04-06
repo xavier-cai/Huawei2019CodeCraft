@@ -3,9 +3,11 @@
 #include "assert.h"
 #include "config.h"
 #include "log.h"
+#include "simulator.h"
 
 void SchedulerAnswer::DoInitialize(SimScenario& scenario)
 {
+    Simulator::SetEnableCheater(false);
     m_scenario = &scenario;
     LOG("read information of answer from " << Config::PathResult);
     FileReader reader;

@@ -43,6 +43,7 @@ private:
     SimCar* PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const;
     SimCar* CheckFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const;
     bool PassCrossOrJustForward(const int& time, SimScenario& scenario, SimCar* car);
+    bool GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const;
     void GetOutFromGarage(const int& time, SimScenario& scenario) const;
     void InitializeVipCarsInGarage(const int& time, SimScenario& scenario);
     GarageList::iterator GetVipOutFromGarage(const int& time, SimScenario& scenario, const GarageList::iterator& garageIte, const int& roadId = -1);
@@ -52,12 +53,18 @@ private:
     void PrintCrossState(const int& time, SimScenario& scenario, Cross* cross) const;
     void PrintDeadLock(const int& time, SimScenario& scenario) const;
 
+    /* cheater */
+    bool m_isEnableCheater;
+
 public:
     static Simulator Instance;
 
     void SetScheduler(Scheduler* scheduler);
     UpdateResult Update(const int& time, SimScenario& scenario);
     void GetDeadLockCars(const int& time, SimScenario& scenario, std::list<SimCar*>& result, int n = -1) const; //n <= 0 means get all dead lock cars
+
+    /* static functions */
+    static void SetEnableCheater(const bool& enable);
 
 };//class Simulator
 
