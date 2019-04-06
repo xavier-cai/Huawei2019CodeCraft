@@ -92,7 +92,7 @@ Cross* Car::GetToCross() const
 
 std::ostream& operator << (std::ostream& os, const Car& car)
 {
-    return (os << (car.GetIsPreset() ? "" : "preset ")
-        << (car.GetIsVip() ? "" : "VIP ")
+    return (os << (car.GetIsPreset() ? "preset " : "")
+        << (car.GetIsVip() ? "VIP " : "")
         << "car [" << car.GetId() << "]");
 }
