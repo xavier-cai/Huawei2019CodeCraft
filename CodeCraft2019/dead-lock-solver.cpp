@@ -7,7 +7,7 @@
 #include <algorithm>
 
 DeadLockSolver::DeadLockSolver()
-    : m_backupTime(-1), m_deadLockTime(-1), m_deadLockTraceIndexes(0)
+    : m_backupTime(-1), m_deadLockTime(-1), m_firstLockOnTime(-1), m_deadLockTraceIndexes(0)
 { }
 
 void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
@@ -138,6 +138,16 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
             ++ite;
         }
     }
+
+    m_firstLockOnTime = -1;
+    for (auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ++ite)
+    {
+        if (!ite->second.GetIsInGarage() && !ite->second.GetIsReachedGoal())
+            if (m_firstLockOnTime < 0 || ite->second.GetLockOnNextRoadTime() < m_firstLockOnTime)
+                m_firstLockOnTime = ite->second.GetLockOnNextRoadTime();
+    }
+    ASSERT(m_firstLockOnTime >= 0);
+
         
     //retry
     m_deadLockTime = time;
@@ -164,4 +174,9 @@ void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<i
 const int& DeadLockSolver::GetDeadLockTime() const
 {
     return m_deadLockTime;
+}
+
+bool DeadLockSolver::NeedUpdate(const int& time) const
+{
+    return time >= m_firstLockOnTime;
 }

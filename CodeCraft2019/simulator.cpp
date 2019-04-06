@@ -34,7 +34,7 @@ void Simulator::NotifyFirstPriority(const int& time, SimScenario& scenario, SimC
             return;
         if (m_scheduler != 0)
             m_scheduler->HandleBecomeFirstPriority(time, scenario, car);
-        car->LockOnNextRoad();
+        car->LockOnNextRoad(time);
     }
 }
 

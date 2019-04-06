@@ -27,7 +27,7 @@ SimCar::SimCar()
 
 SimCar::SimCar(Car* car)
     : m_car(car), m_scenario(0), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
-    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_isIgnored(false), m_startTime(-1)
+    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
@@ -93,14 +93,20 @@ const bool& SimCar::GetIsInGarage() const
     return m_isInGarage;
 }
 
-void SimCar::LockOnNextRoad()
+void SimCar::LockOnNextRoad(const int& time)
 {
     m_isLockOnNextRoad = true;
+    m_lockOnNextRoadTime = time;
 }
 
 const bool& SimCar::GetIsLockOnNextRoad() const
 {
     return m_isLockOnNextRoad;
+}
+
+const int& SimCar::GetLockOnNextRoadTime() const
+{
+    return m_lockOnNextRoadTime >= 0 ? m_lockOnNextRoadTime : m_startTime;
 }
 
 const bool& SimCar::GetIsIgnored() const

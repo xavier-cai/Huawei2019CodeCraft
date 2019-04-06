@@ -19,6 +19,7 @@ public:
     bool IsGarageLockedInBackup(const int& time) const; //check it when handle car get out garage 
     void SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*>& cb); //return selection & is car trace handled
     const int& GetDeadLockTime() const;
+    bool NeedUpdate(const int& time) const;
 
 private:
     MemoryPool m_memoryPool;
@@ -27,6 +28,7 @@ private:
     int m_backupTime;
 
     int m_deadLockTime;
+    int m_firstLockOnTime;
     int* m_deadLockTraceIndexes; //for recover to dead lock, need to keep the trace
     std::map< int, std::set<int> > m_deadLockMemory; //car id -> used next road id
 

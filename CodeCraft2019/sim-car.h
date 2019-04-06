@@ -28,6 +28,7 @@ private:
     bool m_isInGarage;
     bool m_isReachGoal;
     bool m_isLockOnNextRoad; //if the car beacame the first priority, it can not changes its next road
+    int m_lockOnNextRoadTime;
     bool m_isIgnored; //special state flag for debugging, which means it will not be updated, then cause simulation run into a dead loop
     int m_startTime; //the time go on the first road
     
@@ -66,8 +67,9 @@ public:
     const Trace& GetTrace() const;
     const bool& GetIsReachedGoal() const;
     const bool& GetIsInGarage() const;
-    void LockOnNextRoad();
+    void LockOnNextRoad(const int& time);
     const bool& GetIsLockOnNextRoad() const;
+    const int& GetLockOnNextRoadTime() const;
     const bool& GetIsIgnored() const;
     const int& GetStartTime() const;
     
