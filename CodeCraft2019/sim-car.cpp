@@ -12,6 +12,8 @@ std::ostream& operator << (std::ostream& os, const Car& car)
 }
 
 Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
+Callback::Handle2<void, const SimCar*, Road*> SimCar::m_updateGoOnNewRoad(0);
+
 void SimCar::NotifyUpdateState(const SimCar::SimState& state)
 {
     if(!m_updateStateNotifier.IsNull())
