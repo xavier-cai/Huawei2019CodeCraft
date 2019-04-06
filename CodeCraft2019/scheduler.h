@@ -7,6 +7,7 @@
 #include "memory-pool.h"
 #include "timer.h"
 #include "load-state.h"
+#include <fstream>
 
 class Scheduler
 {
@@ -15,6 +16,7 @@ protected:
 
 public:
     virtual ~Scheduler();
+    void EnableTrace(const std::string& traceFile);
 
     void Initialize(SimScenario& scenario);
     void Update(int& time, SimScenario& scenario); //before simulator update
@@ -34,6 +36,8 @@ protected:
 private:
     /* for statistic */
     LoadState m_loadState;
+
+    std::ofstream* m_traceFile;
 
 };//class Scheduler
 
