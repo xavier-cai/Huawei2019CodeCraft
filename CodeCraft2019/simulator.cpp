@@ -340,8 +340,8 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
                         }
                         //UpdateCarsInRoad(time, scenario, road);
                         UpdateCarsInLane(time, scenario, road, lane, opposite, true);
-                        GetVipOutFromGarage(time, scenario);
-                        //GetVipOutFromGarage(time, scenario, road->GetRoad()->GetPeerCross(*crossIte)->GetId(), road->GetRoad()->GetId());
+                        //GetVipOutFromGarage(time, scenario);
+                        GetVipOutFromGarage(time, scenario, road->GetRoad()->GetPeerCross(*crossIte)->GetId(), road->GetRoad()->GetId());
                         //GetVipOutFromGarage(time, scenario, crossId, firstPriority->GetCurrentRoad()->GetId());
                         //crossConflict = false;
                     }
