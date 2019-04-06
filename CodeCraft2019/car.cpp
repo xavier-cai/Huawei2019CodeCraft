@@ -89,3 +89,10 @@ Cross* Car::GetToCross() const
     ASSERT(m_toCross != 0);
     return m_toCross;
 }
+
+std::ostream& operator << (std::ostream& os, const Car& car)
+{
+    return (os << (car.GetIsPreset() ? "" : "preset ")
+        << (car.GetIsVip() ? "" : "VIP ")
+        << "car [" << car.GetId() << "]");
+}

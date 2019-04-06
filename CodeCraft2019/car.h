@@ -41,4 +41,7 @@ public:
     
 };//class Car
 
+#include <iostream>
+std::ostream& operator << (std::ostream& os, const Car& car);
+
 #endif

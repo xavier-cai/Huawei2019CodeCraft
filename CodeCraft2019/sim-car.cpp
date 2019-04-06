@@ -4,13 +4,6 @@
 #include "tactics.h"
 #include "sim-scenario.h"
 
-std::ostream& operator << (std::ostream& os, const Car& car)
-{
-    return (os << (car.GetIsPreset() ? "" : "preset ")
-        << (car.GetIsVip() ? "" : "VIP ")
-        << "car [" << car.GetId() << "]");
-}
-
 Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
 Callback::Handle2<void, const SimCar*, Road*> SimCar::m_updateGoOnNewRoad(0);
 
