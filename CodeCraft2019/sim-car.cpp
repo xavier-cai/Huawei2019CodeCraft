@@ -225,6 +225,10 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
         ASSERT(m_startTime >= 0);
         ASSERT(m_scenario != 0);
         m_scenario->NotifyCarReachGoal(time, this);
+        Road* oldRoad = m_currentRoad;
+        m_currentRoad = 0;
+        if (!m_updateGoOnNewRoad.IsNull())
+            m_updateGoOnNewRoad.Invoke(this, oldRoad);
         return;
     }
     LOG("@" << time << " the " << *m_car << " go on the road " << road->GetId()
