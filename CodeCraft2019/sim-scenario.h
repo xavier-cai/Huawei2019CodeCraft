@@ -39,6 +39,8 @@ public:
     void NotifyCarGetoutOnRoad(const int& time, const SimCar* car);
     void NotifyCarReachGoal(const int& time, const SimCar* car);
     bool IsComplete() const;
+    const unsigned int& GetCarInGarageN() const;
+    const unsigned int& GetReachCarsN() const;
     int GetOnRoadCarsN() const;
     
     void SaveToFile() const;

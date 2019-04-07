@@ -141,6 +141,16 @@ bool SimScenario::IsComplete() const
     return m_reachCarsN == Scenario::Cars().size();
 }
 
+const unsigned int& SimScenario::GetCarInGarageN() const
+{
+    return m_carInGarageN;
+}
+
+const unsigned int& SimScenario::GetReachCarsN() const
+{
+    return m_reachCarsN;
+}
+
 int SimScenario::GetOnRoadCarsN() const
 {
     return Scenario::Cars().size() - (m_reachCarsN + m_carInGarageN);

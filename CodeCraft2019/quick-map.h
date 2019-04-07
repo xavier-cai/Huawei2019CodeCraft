@@ -51,10 +51,10 @@ public:
 
     ~QuickMap() { Dispose(); }
 
-    typename iterator begin() { return m_map.begin(); }
-    typename const_iterator begin() const { return m_map.begin(); }
-    typename iterator end() { return m_map.end(); }
-    typename const_iterator end() const { return m_map.end(); }
+    iterator begin() { return m_map.begin(); }
+    const_iterator begin() const { return m_map.begin(); }
+    iterator end() { return m_map.end(); }
+    const_iterator end() const { return m_map.end(); }
 
 //#define ITERATOR_VALID(ite) (ite##._Getcont() != 0)
 //#define INVALID_ITERATOR iterator()
@@ -100,6 +100,8 @@ public:
         m_map.clear();
     }
 #undef ITERATOR_VALID
+
+    typename std::map<_TK, _TV>::size_type size() { return m_map.size(); }
 
 private:
     void Initilize()
