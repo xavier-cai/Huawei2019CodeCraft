@@ -5,22 +5,20 @@
 #include <fstream>
 
 SimScenario::SimScenario()
-    : m_reachCarsN(0), m_carInGarageN(Scenario::Cars().size())
+    : m_simGarages(Scenario::CalculateIndexArraySize(Scenario::Crosses()), &Scenario::GetCrossIndexer())
+    , m_simRoads(Scenario::CalculateIndexArraySize(Scenario::Roads()), Scenario::Roads(), &Scenario::GetRoadIndexer())
+    , m_simCars(Scenario::CalculateIndexArraySize(Scenario::Cars()), Scenario::Cars(), &Scenario::GetCarIndexer())
+    , m_reachCarsN(0), m_carInGarageN(Scenario::Cars().size())
     , m_scheduledTime(-1), m_totalCompleteTime(0), m_vipFirstPlanTime(-1), m_vipLastReachTime(-1), m_vipTotalCompleteTime(0)
 {
-    //create roads
-    for (auto ite = Scenario::Roads().begin(); ite != Scenario::Roads().end(); ++ite)
+    for (auto ite = Scenario::Crosses().begin(); ite != Scenario::Crosses().end(); ++ite)
     {
-        bool result = m_simRoads.insert(std::make_pair(ite->first, SimRoad(ite->second))).second;
-        ASSERT(result);
+        m_simGarages.insert(ite->first, std::list<SimCar*>());
     }
-    //create garages & cars
-    for (auto ite = Scenario::Cars().begin(); ite != Scenario::Cars().end(); ++ite)
+    for (auto ite = m_simCars.begin(); ite != m_simCars.end(); ++ite)
     {
-        auto result = m_simCars.insert(std::make_pair(ite->first, SimCar(ite->second)));
-        result.first->second.SetScenario(this);
-        ASSERT(result.second);
-        m_simGarages[ite->second->GetFromCrossId()].push_back(&m_simCars[ite->first]);
+        ite->second.SetScenario(this);
+        m_simGarages[ite->second.GetCar()->GetFromCrossId()].push_back(&ite->second);
     }
 }
 
@@ -75,17 +73,17 @@ const int& SimScenario::GetVipTotalCompleteTime() const
     return m_vipTotalCompleteTime;
 }
 
-std::map< int, std::list<SimCar*> >& SimScenario::Garages()
+QuickMap< int, std::list<SimCar*> >& SimScenario::Garages()
 {
     return m_simGarages;
 }
 
-std::map<int, SimRoad>& SimScenario::Roads()
+QuickMap<int, SimRoad>& SimScenario::Roads()
 {
     return m_simRoads;
 }
 
-std::map<int, SimCar>& SimScenario::Cars()
+QuickMap<int, SimCar>& SimScenario::Cars()
 {
     return m_simCars;
 }

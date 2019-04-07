@@ -5,13 +5,14 @@
 #include "sim-road.h"
 #include <map>
 #include <vector>
+#include "quick-map.h"
 
 class SimScenario
 {
 protected:
-    std::map< int, std::list<SimCar*> > m_simGarages;
-    std::map<int, SimRoad> m_simRoads;
-    std::map<int, SimCar> m_simCars;
+    QuickMap< int, std::list<SimCar*> > m_simGarages;
+    QuickMap<int, SimRoad> m_simRoads;
+    QuickMap<int, SimCar> m_simCars;
     unsigned int m_reachCarsN;
     unsigned int m_carInGarageN;
     /* for calculating score */
@@ -32,9 +33,9 @@ public:
     int GetVipScheduledTime() const;
     const int& GetVipTotalCompleteTime() const;
     
-    std::map< int, std::list<SimCar*> >& Garages();
-    std::map<int, SimRoad>& Roads();
-    std::map<int, SimCar>& Cars();
+    QuickMap< int, std::list<SimCar*> >& Garages();
+    QuickMap<int, SimRoad>& Roads();
+    QuickMap<int, SimCar>& Cars();
     void NotifyCarGetoutOnRoad(const int& time, const SimCar* car);
     void NotifyCarReachGoal(const int& time, const SimCar* car);
     bool IsComplete() const;
