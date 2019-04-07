@@ -42,6 +42,7 @@ public:
     Cross* GetPeerCross(Cross* peer) const;
     bool CanStartFrom(const int& crossId) const;
     bool CanReachTo(const int& crossId) const;
+    bool IsFromOrTo(const int& crossId) const;
 
 };//class Road
 

@@ -94,9 +94,7 @@ const std::list<Car*>& SimRoad::GetCarsFrom(const int& lane, const int& crossId)
 
 bool SimRoad::IsFromOrTo(const int& crossId) const
 {
-    bool ret = m_road->GetStartCrossId() == crossId;
-    ASSERT(ret || m_road->GetEndCrossId() == crossId);
-    return ret;
+    return m_road->IsFromOrTo(crossId);
 }
 
 void SimRoad::RunIn(Car* car, const int& lane, const bool& opposite)

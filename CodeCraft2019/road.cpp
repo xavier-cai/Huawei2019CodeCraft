@@ -106,3 +106,10 @@ bool Road::CanReachTo(const int& crossId) const
     ASSERT(isEnd || crossId == m_startCrossId);
     return isEnd || m_isTwoWay;
 }
+
+bool Road::IsFromOrTo(const int& crossId) const
+{
+    bool ret = m_startCrossId == crossId;
+    ASSERT(ret || m_endCrossId == crossId);
+    return ret;
+}
