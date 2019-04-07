@@ -54,7 +54,7 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
             double rng = Random::Uniform();
             SimCar* car = *ite;
                 
-            if (rng < 0.2) //change path
+            if (rng < operatorFactor) //change path
             {
                 if ((*ite)->GetCar()->GetIsPreset())
                 {

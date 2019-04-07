@@ -46,10 +46,9 @@ private:
     std::map<std::string, CostStatistic> m_statistic;
     void DoUpdateTimeCostBegin(const std::string& id);
     void DoUpdateTimeCostEnd(const std::string& id);
+    void DoPrint() const;
 
 public:
-    ~Timer();
-
     static const TimerHandle Record();
     static double GetSpendTime();
     static double GetLeftTime(const double& max);
@@ -57,6 +56,7 @@ public:
      /* for calculating algorithm time cost */
     static void UpdateTimeCostBegin(const std::string& id);
     static void UpdateTimeCostEnd(const std::string& id);
+    static void Print();
 
 };//class Timer
 

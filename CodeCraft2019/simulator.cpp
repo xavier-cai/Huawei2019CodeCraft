@@ -646,14 +646,14 @@ void Simulator::PrintDeadLock(const int& time, SimScenario& scenario) const
             SimCar*& car = *ite;
             Cross* cross = car->GetCurrentCross();
             Road* road = car->GetCurrentRoad();
-            LOG("id " << car->GetCar()->GetId()
+            LOG("the " << *(car->GetCar())
                 << " cross " << cross->GetId()
                 << " road " << road->GetId()
                 << " lane " << car->GetCurrentLane()
                 << " position " << car->GetCurrentPosition()
                 << " next " << car->GetNextRoadId()
                 << " dir " << (car->GetNextRoadId() < 0 ? Cross::DIRECT : cross->GetTurnDirection(road->GetId(), car->GetNextRoadId()))
-                << " waiting for " << car->GetWaitingCar(time)->GetCar()->GetId()
+                << " waiting for " << *(car->GetWaitingCar(time)->GetCar())
                 );
         }
     }

@@ -53,6 +53,7 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="map-array.h" />
     <ClInclude Include="memory-pool.h" />
+    <ClInclude Include="quick-map.h" />
     <ClInclude Include="random-stream.h" />
     <ClInclude Include="random.h" />
     <ClInclude Include="road.h" />
