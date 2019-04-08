@@ -29,7 +29,6 @@ void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
 bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
 {
     LOG("dead lock detected @" << time << " worker depth " << m_depth);
-    m_deadLockTime = time;
     m_actived = true;
     if (time < m_deadLockTime) //backdrop dead lock
     {
@@ -44,10 +43,12 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
             m_subSolver->SetSelectedRoadCallback(m_selectedRoadCallback);
         }
         m_actived = false;
-        return m_subSolver->HandleDeadLock(time, scenario);
+        m_deadLockTime = time;
+        return m_subSolver->DoHandleDeadLock(time, scenario);
     }
     else if (time > m_deadLockTime) //another new dead lock
         m_deadLockMemory.clear(); //reset
+    m_deadLockTime = time;
 
     //remember the trace
     for(auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ite++)
