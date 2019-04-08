@@ -59,13 +59,19 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
     Simulator::Instance.GetDeadLockCars(time, scenario, cars);
     double operatorFactor = 0.2;
     int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
+    int operatorCounterMax = operatorCounter;
     while (operatorCounter > 0)
     {
         //ASSERT(cars.size() > 0);
         if (cars.size() == 0)
         {
-            LOG("unsolved dead lock");
-            return false;
+            if (operatorCounter == operatorCounterMax)
+            {
+                LOG("unsolved dead lock");
+                return false;
+            }
+            LOG("uncomplete dead lock");
+            return true;
         }
         for (auto ite = cars.begin(); ite != cars.end(); )
         {
