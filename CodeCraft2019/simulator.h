@@ -61,6 +61,7 @@ public:
 
     void SetScheduler(Scheduler* scheduler);
     UpdateResult Update(const int& time, SimScenario& scenario);
+    std::pair<int, int> CanCarGetOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const;
     void GetDeadLockCars(const int& time, SimScenario& scenario, std::list<SimCar*>& result, int n = -1) const; //n <= 0 means get all dead lock cars
 
     /* static functions */

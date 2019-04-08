@@ -384,9 +384,8 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
     return result;
 }
 
-bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const
+std::pair<int, int> Simulator::CanCarGetOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const
 {
-    bool goout = false;
     int roadId = car->GetNextRoadId();
     ASSERT(roadId >= 0);
     SimRoad* road = &scenario.Roads()[roadId];
@@ -401,20 +400,33 @@ bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimC
             ASSERT(car->GetCar()->GetIsVip() || lastCar->GetSimState(time) == SimCar::SCHEDULED);
             ASSERT(lastCar->GetCurrentPosition() > 0);
             if (lastCar->GetSimState(time) != SimCar::SCHEDULED && lastCar->GetCurrentPosition() <= maxLength)
-                return false; //need wait
+                return std::make_pair(-1, -1); //need wait
             //try next lane
             if (lastCar->GetSimState(time) == SimCar::SCHEDULED && lastCar->GetCurrentPosition() == 1)
                 continue;
             //decide real position
             maxLength = std::min(maxLength, lastCar->GetCurrentPosition() - 1);
         }
-        bool isFromOrTo = road->IsFromOrTo(crossId);
-        car->UpdateOnRoad(time, road->GetRoad(), i, isFromOrTo, maxLength);
-        road->RunIn(car->GetCar(), i, !isFromOrTo);
-        goout = true;
+        return std::make_pair(i, maxLength);
         break;
     }
-    if (!car->GetCar()->GetIsPreset() && m_isEnableCheater)
+    return std::make_pair(0, 0); //no empty place
+}
+
+bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const
+{
+    auto canGoout = CanCarGetOutFromGarage(time, scenario, car);
+    bool goout = canGoout.first > 0 && canGoout.second > 0;
+    if (goout)
+    {
+        int roadId = car->GetNextRoadId();
+        ASSERT(roadId >= 0);
+        SimRoad* road = &scenario.Roads()[roadId];
+        bool isFromOrTo = road->IsFromOrTo(car->GetCar()->GetFromCrossId());
+        car->UpdateOnRoad(time, road->GetRoad(), canGoout.first, isFromOrTo, canGoout.second);
+        road->RunIn(car->GetCar(), canGoout.first, !isFromOrTo);
+    }
+    if (canGoout.first >= 0 && canGoout.second >= 0 && !car->GetCar()->GetIsPreset() && m_isEnableCheater)
         car->SetRealTime(time + (goout ? 0 : 1));
     return goout;
 }

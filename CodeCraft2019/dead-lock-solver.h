@@ -22,15 +22,20 @@ public:
     bool NeedUpdate(const int& time) const;
 
 private:
+    bool DoHandleDeadLock(int& time, SimScenario& scenario);
+
     MemoryPool m_memoryPool;
 
-    SimScenario m_backupScenario;
+    SimScenario* m_backupScenario;
     int m_backupTime;
 
     int m_deadLockTime;
     int m_firstLockOnTime;
     int* m_deadLockTraceIndexes; //for recover to dead lock, need to keep the trace
     std::map< int, std::set<int> > m_deadLockMemory; //car id -> used next road id
+    int m_depth;
+    bool m_actived;
+    DeadLockSolver* m_subSolver;
 
     Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*> m_selectedRoadCallback; //for selecting new road to break dead lock
 
