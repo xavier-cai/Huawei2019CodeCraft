@@ -187,7 +187,7 @@ void Scenario::DoInitialize()
         if (cross->GetSouthhRoadId() != -1)
         {
             ASSERT(m_roads.find(cross->GetSouthhRoadId()) != m_roads.end());
-            cross->SetSouthhRoad(m_roads[cross->GetSouthhRoadId()]);
+            cross->SetSouthRoad(m_roads[cross->GetSouthhRoadId()]);
         }
         if (cross->GetWestRoadId() != -1)
         {

@@ -61,11 +61,11 @@ public:
     
     void SetNorthRoad(Road* road);
     void SetEasthRoad(Road* road);
-    void SetSouthhRoad(Road* road);
+    void SetSouthRoad(Road* road);
     void SetWestRoad(Road* road);
     Road* GetNorthRoad() const;
     Road* GetEasthRoad() const;
-    Road* GetSouthhRoad() const;
+    Road* GetSouthRoad() const;
     Road* GetWestRoad() const;
     Road* GetRoad(const DirectionType& dir) const;
     

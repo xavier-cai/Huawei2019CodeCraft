@@ -125,7 +125,7 @@ void Cross::SetEasthRoad(Road* road)
     m_east = road;
 }
 
-void Cross::SetSouthhRoad(Road* road)
+void Cross::SetSouthRoad(Road* road)
 {
     ASSERT(road->GetId() == m_southRoadId);
     m_south = road;
@@ -147,7 +147,7 @@ Road* Cross::GetEasthRoad() const
     return m_east;
 }
 
-Road* Cross::GetSouthhRoad() const
+Road* Cross::GetSouthRoad() const
 {
     return m_south;
 }

@@ -132,13 +132,13 @@ void SimScenario::SaveToFile(const char* file) const
             ofs << ")\n";
         }
     }
-    ofs.clear();
     ofs.flush();
+    ofs.close();
 }
 
 bool SimScenario::IsComplete() const
 {
-    return m_reachCarsN == Scenario::Cars().size();
+    return m_reachCarsN == m_simCars.size();
 }
 
 const unsigned int& SimScenario::GetCarInGarageN() const
@@ -153,5 +153,5 @@ const unsigned int& SimScenario::GetReachCarsN() const
 
 int SimScenario::GetOnRoadCarsN() const
 {
-    return Scenario::Cars().size() - (m_reachCarsN + m_carInGarageN);
+    return m_simCars.size() - (m_reachCarsN + m_carInGarageN);
 }

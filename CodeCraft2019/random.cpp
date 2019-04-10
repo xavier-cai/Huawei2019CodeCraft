@@ -39,7 +39,7 @@ double Random::NextUniform(const double& min, const double& max)
 
 double Random::NextNormal(const double& miu, const double& sigma)
 {
-    return (pow(-2 * log(Uniform()), 0.5) * cos(2 * M_PI * Uniform()) - miu) / sigma;
+    return pow(-2 * log(Uniform()), 0.5) * cos(2 * M_PI * Uniform()) * sigma + miu;
 }
 
 double Random::NextPossion(const double& lambda, const double& bound)

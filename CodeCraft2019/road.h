@@ -39,7 +39,7 @@ public:
     void SetEndCross(Cross* cross);
     Cross* GetStartCross() const;
     Cross* GetEndCross() const;
-    Cross* GetPeerCross(Cross* peer) const;
+    Cross* GetPeerCross(const Cross* peer) const;
     bool CanStartFrom(const int& crossId) const;
     bool CanReachTo(const int& crossId) const;
     bool IsFromOrTo(const int& crossId) const;

@@ -20,6 +20,7 @@
     <ClCompile Include="load-state.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="map-array.cpp" />
+    <ClCompile Include="map-genrator.cpp" />
     <ClCompile Include="memory-pool.cpp" />
     <ClCompile Include="random-stream.cpp" />
     <ClCompile Include="random.cpp" />
@@ -52,6 +53,7 @@
     <ClInclude Include="load-state.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="map-array.h" />
+    <ClInclude Include="map-generator.h" />
     <ClInclude Include="memory-pool.h" />
     <ClInclude Include="quick-map.h" />
     <ClInclude Include="random-stream.h" />

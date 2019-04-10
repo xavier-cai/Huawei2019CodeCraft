@@ -85,7 +85,7 @@ Cross* Road::GetEndCross() const
     return m_endCross;
 }
 
-Cross* Road::GetPeerCross(Cross* peer) const
+Cross* Road::GetPeerCross(const Cross* peer) const
 {
     ASSERT(peer != 0);
     bool opposite = m_endCross == peer;

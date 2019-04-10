@@ -101,7 +101,7 @@ public:
     }
 #undef ITERATOR_VALID
 
-    typename std::map<_TK, _TV>::size_type size() { return m_map.size(); }
+    typename std::map<_TK, _TV>::size_type size() const { return m_map.size(); }
 
 private:
     void Initilize()
@@ -116,7 +116,7 @@ private:
     void Dispose()
     {
         if (m_ites != 0)
-            delete m_ites;
+            delete[] m_ites;
         if (m_indexer != 0)
             delete m_indexer;
     }
