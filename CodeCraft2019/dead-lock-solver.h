@@ -17,7 +17,7 @@ public:
     bool HandleDeadLock(int& time, SimScenario& scenario);
     bool IsCarTraceLockedInBackup(SimCar* car) const; //interface for keep trace, check it if you want to change path of car
     bool IsGarageLockedInBackup(const int& time) const; //check it when handle car get out garage 
-    void SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*>& cb); //return selection & is car trace handled
+    void SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::list<int>&, SimCar*>& cb); //return selection & is car trace handled
     const int& GetDeadLockTime() const;
     bool NeedUpdate(const int& time) const;
 
@@ -37,7 +37,7 @@ private:
     bool m_actived;
     DeadLockSolver* m_subSolver;
 
-    Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*> m_selectedRoadCallback; //for selecting new road to break dead lock
+    Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::list<int>&, SimCar*> m_selectedRoadCallback; //for selecting new road to break dead lock
 
 };//class DeadLockSolver
 

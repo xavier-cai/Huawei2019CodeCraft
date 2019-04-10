@@ -123,7 +123,7 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
                     }
                     else
                     {
-                        auto result = m_selectedRoadCallback.Invoke(selections, from, car);
+                        auto result = m_selectedRoadCallback.Invoke(scenario, selections, car);
                         selected = result.first;
                         pushTrace = !result.second;
                     }
@@ -207,7 +207,7 @@ bool DeadLockSolver::IsGarageLockedInBackup(const int& time) const
     return m_subSolver->IsGarageLockedInBackup(time);
 }
 
-void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, const std::list<int>&, int, SimCar*>& cb)
+void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::list<int>&, SimCar*>& cb)
 {
     m_selectedRoadCallback = cb;
     if (m_subSolver != 0)
