@@ -442,10 +442,10 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
         auto findGarage = scenario.Garages().find(crossId);
         if (findGarage != scenario.Garages().end()) //find it!
         {
-            std::map< int, std::list<std::list<SimCar*>::iterator> > cangoCars;
+            std::map< int, std::list<std::map<int, SimCar*>::iterator> > cangoCars;
             for (auto garageCarIte = findGarage->second.begin(); garageCarIte != findGarage->second.end(); ++garageCarIte)
             {
-                SimCar* car = *garageCarIte;
+                SimCar* car = garageCarIte->second;
                 if (car->GetRealTime() <= time) //can get out
                 {
                     if (car->GetCar()->GetIsVip())
@@ -458,7 +458,7 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
                 const int& cangoTime = cangoTimeIte->first;
                 for (auto cangoCarIte = cangoTimeIte->second.begin(); cangoCarIte != cangoTimeIte->second.end(); ++cangoCarIte)
                 {
-                    SimCar* car = **cangoCarIte;
+                    SimCar* car = (*cangoCarIte)->second;
                     if (m_scheduler != 0
                         && !car->GetCar()->GetIsPreset()
                         && !car->GetCar()->GetIsVip()) //vip car is not expect get out in function
@@ -491,14 +491,14 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
         LOG("@" << time << " number of non-VIP cars get on road form garage : " << getOutCounter);
 }
 
-bool CompareCarsInGarage(const std::list<SimCar*>::iterator& a, const std::list<SimCar*>::iterator& b)
+bool CompareCarsInGarage(const std::map<int, SimCar*>::iterator& a, const std::map<int, SimCar*>::iterator& b)
 {
     //only compare VIP cars
     //if ((*a)->GetCar()->GetIsVip() != (*b)->GetCar()->GetIsVip())
     //    return (*a)->GetCar()->GetIsVip();
-    if ((*a)->GetRealTime() != (*b)->GetRealTime())
-        return (*a)->GetRealTime() < (*b)->GetRealTime();
-    return (*a)->GetCar()->GetId() < (*b)->GetCar()->GetId();
+    if (a->second->GetRealTime() != b->second->GetRealTime())
+        return a->second->GetRealTime() < b->second->GetRealTime();
+    return a->second->GetCar()->GetId() < b->second->GetCar()->GetId();
 }
 
 void Simulator::InitializeVipCarsInGarage(const int& time, SimScenario& scenario)
@@ -510,7 +510,8 @@ void Simulator::InitializeVipCarsInGarage(const int& time, SimScenario& scenario
         auto& vipGarage = m_vipCarsInGarage[garageIte->first];
         for (auto carIte = garage.begin(); carIte != garage.end(); ++carIte)
         {
-            if ((*carIte)->GetCar()->GetIsVip() && (*carIte)->GetRealTime() <= time)
+            const SimCar* car = carIte->second;
+            if (car->GetCar()->GetIsVip() && car->GetRealTime() <= time)
             {
                 vipGarage.push_back(carIte);
             }
@@ -524,7 +525,7 @@ Simulator::GarageList::iterator Simulator::GetVipOutFromGarage(const int& time, 
     auto& oriGarage = scenario.Garages()[garageIte->first];
     for (auto ite = garageIte->second.begin(); ite != garageIte->second.end();)
     {
-        SimCar* car = **ite;
+        SimCar* car = (*ite)->second;
         int oldTime = car->GetRealTime();
         if (m_scheduler != 0
             && !car->GetCar()->GetIsPreset())

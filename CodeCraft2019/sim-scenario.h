@@ -10,7 +10,7 @@
 class SimScenario
 {
 protected:
-    QuickMap< int, std::list<SimCar*> > m_simGarages;
+    QuickMap< int, std::map<int, SimCar*> > m_simGarages;
     QuickMap<int, SimRoad> m_simRoads;
     QuickMap<int, SimCar> m_simCars;
     unsigned int m_reachCarsN;
@@ -23,7 +23,7 @@ protected:
     int m_vipTotalCompleteTime;
     
 public:
-    SimScenario();
+    SimScenario(bool onlyPreset = false);
     virtual ~SimScenario();
     SimScenario(const SimScenario& o);
     SimScenario& operator = (const SimScenario& o);
@@ -33,7 +33,7 @@ public:
     int GetVipScheduledTime() const;
     const int& GetVipTotalCompleteTime() const;
     
-    QuickMap< int, std::list<SimCar*> >& Garages();
+    QuickMap< int, std::map<int, SimCar*> >& Garages();
     QuickMap<int, SimRoad>& Roads();
     QuickMap<int, SimCar>& Cars();
     void NotifyCarGetoutOnRoad(const int& time, const SimCar* car);
@@ -42,6 +42,10 @@ public:
     const unsigned int& GetCarInGarageN() const;
     const unsigned int& GetReachCarsN() const;
     int GetOnRoadCarsN() const;
+
+    void ResetScenario();
+    SimCar* AddCar(Car* car);
+    void RemoveCar(const int& id);
     
     void SaveToFile() const;
     void SaveToFile(const char* file) const;

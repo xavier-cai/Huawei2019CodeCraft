@@ -24,6 +24,7 @@ public:
     SimRoad& operator = (const SimRoad& o);
     ~SimRoad();
     
+    void Reset();
     Road* GetRoad() const;
 
     /* const interfaces */

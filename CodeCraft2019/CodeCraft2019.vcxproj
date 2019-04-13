@@ -28,7 +28,6 @@
     <ClCompile Include="scenario.cpp" />
     <ClCompile Include="scheduler-answer.cpp" />
     <ClCompile Include="scheduler-floyd.cpp" />
-    <ClCompile Include="scheduler-xavier.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="score-calculator.cpp" />
     <ClCompile Include="sim-car.cpp" />
@@ -62,7 +61,6 @@
     <ClInclude Include="scenario.h" />
     <ClInclude Include="scheduler-answer.h" />
     <ClInclude Include="scheduler-floyd.h" />
-    <ClInclude Include="scheduler-xavier.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="score-calculator.h" />
     <ClInclude Include="sim-car.h" />

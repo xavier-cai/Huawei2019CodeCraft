@@ -23,7 +23,7 @@ private:
     int m_scheduledCarsN; //counter
     int m_reachedCarsN; //counter
     bool m_conflictFlag; //for checking conflict, reset in each schedule cycle
-    typedef std::map< int, std::list<std::list<SimCar*>::iterator> > GarageList;
+    typedef std::map< int, std::list<std::map<int, SimCar*>::iterator> > GarageList;
     GarageList m_vipCarsInGarage; //cross id -> vip car(iterator) list
 
     /* for handle callback */

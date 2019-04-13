@@ -43,6 +43,12 @@ SimRoad::~SimRoad()
     delete[] m_cars;
 }
 
+void SimRoad::Reset()
+{
+    for (auto ite = m_lists.begin(); ite != m_lists.end(); ++ite)
+        (*ite)->clear();
+}
+
 Road* SimRoad::GetRoad() const
 {
     return m_road;

@@ -57,6 +57,7 @@ public:
     SimCar();
     SimCar(Car* car);
 
+    void Reset();
     void SetScenario(SimScenario* scenario);
     void SetIsIgnored(const bool& ignored);
 

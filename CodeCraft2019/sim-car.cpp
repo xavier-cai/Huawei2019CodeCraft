@@ -39,6 +39,24 @@ SimCar::SimCar(Car* car)
     }
 }
 
+void SimCar::Reset()
+{
+    m_isInGarage = true;
+    m_isReachGoal = false;
+    m_isLockOnNextRoad = false;
+    m_lockOnNextRoadTime = -1;
+    m_currentTraceNode = m_trace->Head();
+    m_startTime = -1;
+    m_lastUpdateTime = -1;
+    m_simState = SCHEDULED;
+    m_waitingCar = 0;
+    m_currentTraceIndex = 0;
+    m_currentRoad = 0;
+    m_currentLane = 0;
+    m_currentDirection = true;
+    m_currentPosition = 0;
+}
+
 void SimCar::SetScenario(SimScenario* scenario)
 {
     m_scenario = scenario;

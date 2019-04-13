@@ -4,22 +4,31 @@
 #include "config.h"
 #include <fstream>
 
-SimScenario::SimScenario()
+SimScenario::SimScenario(bool onlyPreset)
     : m_simGarages(Scenario::CalculateIndexArraySize(Scenario::Crosses()), &Scenario::GetCrossIndexer())
     , m_simRoads(Scenario::CalculateIndexArraySize(Scenario::Roads()), Scenario::Roads(), &Scenario::GetRoadIndexer())
     , m_simCars(Scenario::CalculateIndexArraySize(Scenario::Cars()), Scenario::Cars(), &Scenario::GetCarIndexer())
-    , m_reachCarsN(0), m_carInGarageN(Scenario::Cars().size())
+    , m_reachCarsN(0), m_carInGarageN(0)
     , m_scheduledTime(-1), m_totalCompleteTime(0), m_vipFirstPlanTime(-1), m_vipLastReachTime(-1), m_vipTotalCompleteTime(0)
 {
     for (auto ite = Scenario::Crosses().begin(); ite != Scenario::Crosses().end(); ++ite)
     {
-        m_simGarages.insert(ite->first, std::list<SimCar*>());
+        m_simGarages.insert(ite->first, std::map<int, SimCar*>());
     }
-    for (auto ite = m_simCars.begin(); ite != m_simCars.end(); ++ite)
+    for (auto ite = m_simCars.begin(); ite != m_simCars.end(); )
     {
-        ite->second.SetScenario(this);
-        m_simGarages[ite->second.GetCar()->GetFromCrossId()].push_back(&ite->second);
+        if (!onlyPreset || ite->second.GetCar()->GetIsPreset())
+        {
+            ite->second.SetScenario(this);
+            m_simGarages[ite->second.GetCar()->GetFromCrossId()].insert(std::make_pair(ite->second.GetCar()->GetId(), &ite->second));
+            ++ite;
+        }
+        else
+        {
+            ite = m_simCars.erase(ite);
+        }
     }
+    m_carInGarageN = m_simCars.size();
 }
 
 SimScenario::~SimScenario()
@@ -39,8 +48,8 @@ SimScenario& SimScenario::operator = (const SimScenario& o)
     {
         for (auto ii = ite->second.begin(); ii != ite->second.end(); ++ii)
         {
-            *ii = &m_simCars[(*ii)->GetCar()->GetId()];
-            (*ii)->SetScenario(this);
+            ii->second = &m_simCars[ii->first];
+            ii->second->SetScenario(this);
         }
     }
     m_reachCarsN = o.m_reachCarsN;
@@ -73,7 +82,7 @@ const int& SimScenario::GetVipTotalCompleteTime() const
     return m_vipTotalCompleteTime;
 }
 
-QuickMap< int, std::list<SimCar*> >& SimScenario::Garages()
+QuickMap< int, std::map<int, SimCar*> >& SimScenario::Garages()
 {
     return m_simGarages;
 }
@@ -154,4 +163,48 @@ const unsigned int& SimScenario::GetReachCarsN() const
 int SimScenario::GetOnRoadCarsN() const
 {
     return m_simCars.size() - (m_reachCarsN + m_carInGarageN);
+}
+
+void SimScenario::ResetScenario()
+{
+    m_simGarages.clear();
+    for (auto ite = m_simCars.begin(); ite != m_simCars.end(); ++ite)
+    {
+        ite->second.Reset();
+        m_simGarages[ite->second.GetCar()->GetFromCrossId()].insert(std::make_pair(ite->second.GetCar()->GetId(), &ite->second));
+    }
+    for (auto ite = m_simRoads.begin(); ite != m_simRoads.end(); ++ite)
+    {
+        ite->second.Reset();
+    }
+    m_reachCarsN = 0;
+    m_carInGarageN = m_simCars.size();
+    m_scheduledTime = -1;
+    m_totalCompleteTime = 0;
+    m_vipFirstPlanTime = -1;
+    m_vipLastReachTime = -1;
+    m_vipTotalCompleteTime = 0;
+}
+
+SimCar* SimScenario::AddCar(Car* car)
+{
+    ASSERT(m_simCars.find(car->GetId()) == m_simCars.end());
+    auto result = m_simCars.insert(car->GetId(), SimCar(car));
+    ASSERT(result.second);
+    if (m_simGarages.find(car->GetFromCrossId()) == m_simGarages.end())
+        m_simGarages.insert(car->GetFromCrossId(), std::map<int, SimCar*>());
+    auto& garage = m_simGarages[car->GetFromCrossId()];
+    ASSERT(garage.find(car->GetId()) == garage.end());
+    auto gResult = garage.insert(std::make_pair(car->GetId(), &(result.first->second)));
+    ASSERT(gResult.second);
+    return gResult.first->second;
+}
+
+void SimScenario::RemoveCar(const int& id)
+{
+    auto find = m_simCars.find(id);
+    ASSERT(find != m_simCars.end());
+    ASSERT(find->second.GetIsInGarage());
+    m_simGarages[find->second.GetCar()->GetFromCrossId()].erase(id);
+    m_simCars.erase(find);
 }
