@@ -20,7 +20,7 @@ SimCar::SimCar()
 
 SimCar::SimCar(Car* car)
     : m_car(car), m_scenario(0), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
-    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1)
+    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1), m_isForceOutput(false)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
@@ -65,6 +65,11 @@ void SimCar::SetScenario(SimScenario* scenario)
 void SimCar::SetIsIgnored(const bool& ignored)
 {
     m_isIgnored = ignored;
+}
+
+void SimCar::SetIsForceOutput(const bool& forceOutput)
+{
+    m_isForceOutput = forceOutput;
 }
 
 Car* SimCar::GetCar() const
@@ -128,6 +133,11 @@ const bool& SimCar::GetIsIgnored() const
 const int& SimCar::GetStartTime() const
 {
     return m_startTime;
+}
+
+const bool& SimCar::GetIsForceOutput() const
+{
+    return m_isForceOutput;
 }
 
 int SimCar::GetNextRoadId() const

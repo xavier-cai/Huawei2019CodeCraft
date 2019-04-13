@@ -31,6 +31,7 @@ private:
     int m_lockOnNextRoadTime;
     bool m_isIgnored; //special state flag for debugging, which means it will not be updated, then cause simulation run into a dead loop
     int m_startTime; //the time go on the first road
+    bool m_isForceOutput;
     
     /* indicate update state of car in simulation */
     int m_lastUpdateTime;
@@ -60,6 +61,7 @@ public:
     void Reset();
     void SetScenario(SimScenario* scenario);
     void SetIsIgnored(const bool& ignored);
+    void SetIsForceOutput(const bool& forceOutput);
 
     Car* GetCar() const;
     void SetRealTime(int realTime);
@@ -73,6 +75,7 @@ public:
     const int& GetLockOnNextRoadTime() const;
     const bool& GetIsIgnored() const;
     const int& GetStartTime() const;
+    const bool& GetIsForceOutput() const;
     
     int GetNextRoadId() const; //-1 means reaching end cross
     SimState GetSimState(int time);

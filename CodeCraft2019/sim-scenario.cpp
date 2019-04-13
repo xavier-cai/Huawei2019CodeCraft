@@ -130,7 +130,7 @@ void SimScenario::SaveToFile(const char* file) const
     for (auto ite = m_simCars.begin(); ite != m_simCars.end(); ++ite)
     {
         const SimCar* car = &ite->second;
-        if (!car->GetCar()->GetIsPreset())
+        if (!car->GetCar()->GetIsPreset() || car->GetIsForceOutput())
         {
             ofs << '(' << ite->first << ", " << car->GetRealTime();
             ASSERT(car->GetTrace().Head() != car->GetTrace().Tail());
