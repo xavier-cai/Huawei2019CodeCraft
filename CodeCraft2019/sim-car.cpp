@@ -3,6 +3,8 @@
 #include "log.h"
 #include "tactics.h"
 #include "sim-scenario.h"
+#include "scenario.h"
+#include <algorithm>
 
 Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
 Callback::Handle2<void, const SimCar*, Road*> SimCar::m_updateGoOnNewRoad(0);
@@ -20,7 +22,7 @@ SimCar::SimCar()
 
 SimCar::SimCar(Car* car)
     : m_car(car), m_scenario(0), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
-    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1), m_isForceOutput(false)
+    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1), m_isForceOutput(false), m_calculateTimeCache(-1)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
@@ -342,4 +344,30 @@ void SimCar::SetUpdateStateNotifier(const Callback::Handle1<void, const SimState
 void SimCar::SetUpdateGoOnNewRoad(const Callback::Handle2<void, const SimCar*, Road*>& notifier)
 {
     m_updateGoOnNewRoad = notifier;
+}
+
+int SimCar::CalculateTime(bool useCache)
+{
+    if (!useCache || m_calculateTimeCache < 0)
+    {
+        m_calculateTimeCache = 0;
+        int lastLeft = 0;
+        for (auto ite = m_trace->Head(); ite != m_trace->Tail(); ++ite)
+        {
+            Road* road = Scenario::GetRoad(*ite);
+            int length = road->GetLength();
+            int limit = std::min(m_car->GetMaxSpeed(), road->GetLimit());
+            if (lastLeft > 0)
+            {
+                if (limit >= lastLeft)
+                    length -= (limit - lastLeft);
+            }
+            m_calculateTimeCache += length / limit;
+            lastLeft = length % limit;
+            if (lastLeft > 0)
+                ++m_calculateTimeCache;
+        }
+    }
+    ASSERT(m_calculateTimeCache > 0);
+    return m_calculateTimeCache;
 }

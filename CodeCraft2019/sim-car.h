@@ -32,6 +32,7 @@ private:
     bool m_isIgnored; //special state flag for debugging, which means it will not be updated, then cause simulation run into a dead loop
     int m_startTime; //the time go on the first road
     bool m_isForceOutput;
+    int m_calculateTimeCache;
     
     /* indicate update state of car in simulation */
     int m_lastUpdateTime;
@@ -100,6 +101,8 @@ public:
 
     static void SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier);
     static void SetUpdateGoOnNewRoad(const Callback::Handle2<void, const SimCar*, Road*>& notifier);
+
+    int CalculateTime(bool useCache);
     
 };//class SimCar
 
