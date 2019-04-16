@@ -29,6 +29,7 @@ public:
     };
 
 private:
+    int m_originId;
     int m_id;
     int m_northRoadId;
     int m_eastRoadId;
@@ -44,13 +45,14 @@ private:
     
 public:
     Cross();
-    Cross(const int& id, const int& northRoadId, const int& eastRoadId, const int& southRoadId, const int& westRoadId);
+    Cross(const int& origin, const int& id, const int& northRoadId, const int& eastRoadId, const int& southRoadId, const int& westRoadId);
     ~Cross();
     
+    const int& GetOriginId() const;
     const int& GetId() const;
     const int& GetNorthRoadId() const;
     const int& GetEasthRoadId() const;
-    const int& GetSouthhRoadId() const;
+    const int& GetSouthRoadId() const;
     const int& GetWestRoadId() const;
     int GetRoadId(const DirectionType& dir) const;
     const DirectionType& GetDirection(const int& id) const;
@@ -59,6 +61,10 @@ public:
     Road* GetTurnDestination(const int& from, const TurnType& turn) const;
     int GetTurnDestinationId(const int& from, const TurnType& turn) const;
     
+    void SetNorthRoadId(const int& id);
+    void SetEasthRoadId(const int& id);
+    void SetSouthRoadId(const int& id);
+    void SetWestRoadId(const int& id);
     void SetNorthRoad(Road* road);
     void SetEasthRoad(Road* road);
     void SetSouthRoad(Road* road);

@@ -31,22 +31,25 @@ bool SchedulerAnswer::HandleAnswer(std::istream& is)
         ASSERT_MSG(c == ',', "char=" << c << " position=" << i);
     }
     ASSERT(argv[0] >= 0 && argv[1] >= 0);
-    SimCar* car = &m_scenario->Cars()[argv[0]];
+    int id = Scenario::MapCarOriginToIndex(argv[0]);
+    SimCar* car = m_scenario->Cars()[id];
+
     ASSERT(car != 0);
-    if (!car->GetCar()->GetIsPreset())
-    {
+    if (car->GetCar()->GetIsPreset())
+        car->GetTrace().Clear();
+    else
         car->SetRealTime(argv[1]);
-        int path;
-        while (true)
-        {
-            path = -1;
-            is >> path >> c;
-            ASSERT(c == ',' || c == ')');
-            ASSERT(path >= 0);
-            car->GetTrace().AddToTail(path);
-            if (c == ')')
-                break;
-        }
+    int path;
+    while (true)
+    {
+        path = -1;
+        is >> path >> c;
+        ASSERT(c == ',' || c == ')');
+        ASSERT(path >= 0);
+        car->GetTrace().AddToTail(Scenario::MapRoadOriginToIndex(path));
+        if (c == ')')
+            break;
     }
+
     return true;
 }

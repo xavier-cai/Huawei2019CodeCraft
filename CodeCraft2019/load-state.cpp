@@ -16,11 +16,11 @@ void LoadState::Update(const int& time, SimScenario& scenario)
     if (time <= 0)
         return ;
     if (m_timeLoad.size() > 0)
-        ASSERT((--m_timeLoad.end())->Time == time - 1);
+        ASSERT(m_timeLoad.back().Time == time - 1);
     m_timeLoad.push_back(TimeSlice(time, scenario.GetOnRoadCarsN()));
-    for (auto ite = scenario.Roads().begin(); ite != scenario.Roads().end(); ite++)
+    for (uint i = 0; i < scenario.Roads().size(); ++i)
     {
-        SimRoad* road = &ite->second;
+        SimRoad* road = scenario.Roads()[i];
         int lanes = road->GetRoad()->GetLanes();
         int load = 0;
         int loadOpposite = 0;
@@ -39,12 +39,12 @@ void LoadState::Update(const int& time, SimScenario& scenario)
 void LoadState::Print(SimScenario& scenario) const
 {
     ASSERT(m_timeLoad.size() > 0);
-    const int& time = (--m_timeLoad.end())->Time;
+    const int& time = m_timeLoad.back().Time;
     LOG ("Space load : ");
     int capacityTotal = 0;
-    for (auto ite = scenario.Roads().begin(); ite != scenario.Roads().end(); ite++)
+    for (uint i = 0; i < scenario.Roads().size(); ++i)
     {
-        SimRoad* road = &ite->second;
+        SimRoad* road = scenario.Roads()[i];
         int lanes = road->GetRoad()->GetLanes();
         int capacity = lanes * road->GetRoad()->GetLength();
         capacityTotal += road->GetRoad()->GetIsTwoWay() ? capacity * 2 : capacity;

@@ -53,13 +53,18 @@ ScoreCalculator::ScoreCalculator()
 
 ScoreCalculator ScoreCalculator::Instance;
 
+double inline Division(const double& a, const double& b)
+{
+    return int(a / b * 1e5) / 1e5;
+}
+
 ScoreCalculator::ScoreResult ScoreCalculator::DoCalculate(const SimScenario& scenario) const
 {
     ScoreResult result;
     ScoreStatistic all, vip;
     for (auto ite = Scenario::Cars().begin(); ite != Scenario::Cars().end(); ++ite)
     {
-        const Car* car = ite->second;
+        const Car* car = *ite;
         if (car->GetIsVip())
         {
             result.Vip = true;
@@ -69,19 +74,20 @@ ScoreCalculator::ScoreResult ScoreCalculator::DoCalculate(const SimScenario& sce
     }
     ASSERT(all.IsValid());
     ASSERT(!result.Vip || vip.IsValid());
-    LOG("origin result : score " << scenario.GetScheduledTime()
-        << " total " << scenario.GetTotalCompleteTime());
-    LOG("vip result : score " << scenario.GetVipScheduledTime()
-        << " total " << scenario.GetVipTotalCompleteTime());
-    float factor = 0
-        + (all.MaxSpeed * 1.0 / all.MinSpeed) / (vip.MaxSpeed * 1.0 / vip.MinSpeed)
-        + (all.LastPlanTime * 1.0 / all.FirstPlanTime) / (vip.LastPlanTime * 1.0 / vip.FirstPlanTime)
-        + all.StartDistribution.size() * 1.0 / vip.StartDistribution.size()
-        + all.EndDistribution.size() * 1.0 / vip.EndDistribution.size();
-    float factorA = Scenario::Cars().size() * 1.0 / Scenario::GetVipCarsN() * 0.05 + factor * 0.2375;
-    float factorB = Scenario::Cars().size() * 1.0 / Scenario::GetVipCarsN() * 0.8 + factor * 0.05;
+    double factor = 0
+        + Division(Division(all.MaxSpeed, all.MinSpeed), Division(vip.MaxSpeed, vip.MinSpeed))
+        + Division(Division(all.LastPlanTime, all.FirstPlanTime), Division(vip.LastPlanTime, vip.FirstPlanTime))
+        + Division(all.StartDistribution.size(), vip.StartDistribution.size())
+        + Division(all.EndDistribution.size(), vip.EndDistribution.size());
+    double factorA = Division(Scenario::Cars().size(), Scenario::GetVipCarsN()) * 0.05 + factor * 0.2375;
+    double factorB = Division(Scenario::Cars().size(), Scenario::GetVipCarsN()) * 0.8 + factor * 0.05;
     result.Score = factorA * scenario.GetVipScheduledTime() + scenario.GetScheduledTime() + 0.5;
     result.Total = factorB * scenario.GetVipTotalCompleteTime() + scenario.GetTotalCompleteTime() + 0.5;
+    LOG("factor o = " << factor << ", a = " << factorA << ", b = " << factorB);
+    LOG("vip result : score " << scenario.GetVipScheduledTime()
+        << " total " << scenario.GetVipTotalCompleteTime());
+    LOG("origin result : score " << scenario.GetScheduledTime()
+        << " total " << scenario.GetTotalCompleteTime());
     LOG("final result : score " << result.Score
         << " total " << result.Total);
     return result;

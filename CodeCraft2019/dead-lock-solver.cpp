@@ -1,5 +1,4 @@
 #include "dead-lock-solver.h"
-#include "scenario.h"
 #include "log.h"
 #include "assert.h"
 #include "simulator.h"
@@ -18,7 +17,7 @@ void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
         m_backupTime = time;
     }
 
-    int size = Scenario::CalculateIndexArraySize(Scenario::Cars());
+    int size = Scenario::Cars().size();
     m_deadLockTraceIndexes = m_memoryPool.NewArray<int>(size);
     for(int i = 0; i < size; ++i)
     {
@@ -51,9 +50,11 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
     m_deadLockTime = time;
 
     //remember the trace
-    for(auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ite++)
+    for(uint i = 0; i < scenario.Cars().size(); ++i)
     {
-        m_deadLockTraceIndexes[_a(ite->second.GetCar()->GetId())] = ite->second.GetCurrentTraceIndex();
+        SimCar* car = scenario.Cars()[i];
+        if (car == 0) continue;
+        m_deadLockTraceIndexes[i] = car->GetCurrentTraceIndex();
     }
 
     std::list<SimCar*> cars;
@@ -95,7 +96,7 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
                 std::list<int> selections;
                 for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
                 {
-                    Road* road = Scenario::GetCross(from)->GetRoad((Cross::DirectionType)i);
+                    Road* road = Scenario::Crosses()[from]->GetRoad((Cross::DirectionType)i);
                     if (road != 0 && road->GetId() != car->GetCurrentRoad()->GetId()
                         && road->GetId() != nextRoad && memory.find(road->GetId()) == memory.end())
                     {
@@ -132,14 +133,14 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
                 {
                     if (pushTrace)
                     {
-                        carTrace.Clear(car->GetCurrentTraceNode());
+                        carTrace.Clear(car->GetCurrentTraceIndex());
                         carTrace.AddToTail(selected);
                     }
                     --operatorCounter;
                     LOG ("reset trace of car [" << car->GetCar()->GetId() << "] ");
                     ite = cars.erase(ite);
                     //the car need go through the selected road
-                    m_deadLockTraceIndexes[_a(car->GetCar()->GetId())] = car->GetCurrentTraceIndex() + 1;
+                    m_deadLockTraceIndexes[car->GetCar()->GetId()] = car->GetCurrentTraceIndex() + 1;
                     memory.insert(selected);
                     continue;
                 }
@@ -165,11 +166,13 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
     }
 
     m_firstLockOnTime = -1;
-    for (auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ++ite)
+    for (uint i = 0; i < scenario.Cars().size(); ++i)
     {
-        if (!ite->second.GetIsInGarage() && !ite->second.GetIsReachedGoal())
-            if (m_firstLockOnTime < 0 || ite->second.GetLockOnNextRoadTime() < m_firstLockOnTime)
-                m_firstLockOnTime = ite->second.GetLockOnNextRoadTime();
+        SimCar* car = scenario.Cars()[i];
+        if (car != 0)
+            if (!car->GetIsInGarage() && !car->GetIsReachedGoal())
+                if (m_firstLockOnTime < 0 || car->GetLockOnNextRoadTime() < m_firstLockOnTime)
+                    m_firstLockOnTime = car->GetLockOnNextRoadTime();
     }
     ASSERT(m_firstLockOnTime >= 0);
     return true;
@@ -191,7 +194,7 @@ bool DeadLockSolver::IsCarTraceLockedInBackup(SimCar* car) const
 {
     if (m_actived)
     {
-        return m_deadLockTraceIndexes[_a(car->GetCar()->GetId())] > car->GetCurrentTraceIndex();
+        return m_deadLockTraceIndexes[car->GetCar()->GetId()] > car->GetCurrentTraceIndex();
     }
     ASSERT(m_subSolver != 0);
     return m_subSolver->IsCarTraceLockedInBackup(car);

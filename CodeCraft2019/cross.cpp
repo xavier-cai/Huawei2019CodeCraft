@@ -7,8 +7,8 @@ Cross::Cross()
     ASSERT(false);
 }
 
-Cross::Cross(const int& id, const int& northRoadId, const int& eastRoadId, const int& southRoadId, const int& westRoadId)
-    : m_id(id), m_northRoadId(northRoadId), m_eastRoadId(eastRoadId), m_southRoadId(southRoadId), m_westRoadId(westRoadId)
+Cross::Cross(const int& origin, const int& id, const int& northRoadId, const int& eastRoadId, const int& southRoadId, const int& westRoadId)
+    : m_originId(origin), m_id(id), m_northRoadId(northRoadId), m_eastRoadId(eastRoadId), m_southRoadId(southRoadId), m_westRoadId(westRoadId)
     , m_north(0), m_east(0), m_south(0), m_west(0)
 {
     if (m_northRoadId >= 0) m_directions[m_northRoadId] = NORTH;
@@ -19,6 +19,11 @@ Cross::Cross(const int& id, const int& northRoadId, const int& eastRoadId, const
 
 Cross::~Cross()
 { }
+
+const int& Cross::GetOriginId() const
+{
+    return m_originId;
+}
 
 const int& Cross::GetId() const
 {
@@ -35,7 +40,7 @@ const int& Cross::GetEasthRoadId() const
     return m_eastRoadId;
 }
 
-const int& Cross::GetSouthhRoadId() const
+const int& Cross::GetSouthRoadId() const
 {
     return m_southRoadId;
 }
@@ -111,6 +116,30 @@ Road* Cross::GetTurnDestination(const int& from, const Cross::TurnType& turn) co
 int Cross::GetTurnDestinationId(const int& from, const Cross::TurnType& turn) const
 {
     return GetRoadId(GetTurnDestinationDirection(from, turn));
+}
+
+void Cross::SetNorthRoadId(const int& id)
+{
+    m_northRoadId = id;
+    m_directions[id] = NORTH;
+}
+
+void Cross::SetEasthRoadId(const int& id)
+{
+    m_eastRoadId = id;
+    m_directions[id] = EAST;
+}
+
+void Cross::SetSouthRoadId(const int& id)
+{
+    m_southRoadId = id;
+    m_directions[id] = SOUTH;
+}
+
+void Cross::SetWestRoadId(const int& id)
+{
+    m_westRoadId = id;
+    m_directions[id] = WEST;
 }
 
 void Cross::SetNorthRoad(Road* road)

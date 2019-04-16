@@ -2,10 +2,9 @@
 #include "assert.h"
 
 Trace::Trace()
-    : m_size(0)
 {
     m_container.push_back(-1);
-    m_end = m_container.begin();
+    m_end = 0;
 }
 
 Trace::Trace(const Trace& o)
@@ -15,11 +14,9 @@ Trace::Trace(const Trace& o)
 
 Trace& Trace::operator = (const Trace& o)
 {
-    for (auto ite = o.m_container.begin(); ite != o.m_end; ++ite)
-        m_container.push_back(*ite);
+    m_container = o.m_container;
     m_container.push_back(-1);
-    m_end = --m_container.end();
-    m_size = o.m_size;
+    m_end = o.m_end;
     return *this;
 }
 
@@ -30,7 +27,7 @@ Trace::Node Trace::Head()
 
 Trace::Node Trace::Tail()
 {
-    return m_end;
+    return m_container.begin() + m_end;
 }
 
 Trace::NodeConst Trace::Head() const
@@ -40,36 +37,33 @@ Trace::NodeConst Trace::Head() const
 
 Trace::NodeConst Trace::Tail() const
 {
-    return m_end;
+    return m_container.begin() + m_end;
 }
 
 const std::size_t& Trace::Size() const
 {
-    return m_size;
+    return m_end;
 }
 
 void Trace::RemoveFromTail()
 {
-    ASSERT(m_end != m_container.begin());
+    ASSERT(m_end != 0);
     --m_end;
-    *m_end = -1;
-    --m_size;
+    m_container[m_end] = -1;
 }
 
 void Trace::AddToTail(int id)
 {
     ASSERT(id >= 0);
-    *m_end = id;
+    m_container[m_end] = id;
     ++m_end;
-    if (m_end == m_container.end())
+    if (m_end == m_container.size())
     {
         m_container.push_back(-1);
-        --m_end;
     }
-    ++m_size;
 }
 
-void Trace::Clear(NodeConst untill)
+void Trace::Clear(const std::size_t& untill)
 {
     while (m_end != untill)
     {
@@ -79,5 +73,15 @@ void Trace::Clear(NodeConst untill)
 
 void Trace::Clear()
 {
-    Clear(m_container.begin());
+    Clear(0);
+}
+
+int& Trace::operator [] (const std::size_t& index)
+{
+    return m_container[index];
+}
+
+const int& Trace::operator [] (const std::size_t& index) const
+{
+    return m_container[index];
 }

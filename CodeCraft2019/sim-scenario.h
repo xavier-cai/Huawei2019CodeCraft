@@ -5,15 +5,16 @@
 #include "sim-road.h"
 #include <map>
 #include <vector>
-#include "quick-map.h"
+#include "scenario.h"
 
 class SimScenario
 {
 protected:
-    QuickMap< int, std::map<int, SimCar*> > m_simGarages;
-    QuickMap<int, SimRoad> m_simRoads;
-    QuickMap<int, SimCar> m_simCars;
+    std::vector< std::vector<SimCar*> > m_simGarages; //indexed by cross id
+    std::vector<SimRoad*> m_simRoads;
+    std::vector<SimCar*> m_simCars;
     unsigned int m_reachCarsN;
+    unsigned int m_carOnRoadN;
     unsigned int m_carInGarageN;
     /* for calculating score */
     int m_scheduledTime;
@@ -33,9 +34,9 @@ public:
     int GetVipScheduledTime() const;
     const int& GetVipTotalCompleteTime() const;
     
-    QuickMap< int, std::map<int, SimCar*> >& Garages();
-    QuickMap<int, SimRoad>& Roads();
-    QuickMap<int, SimCar>& Cars();
+    const std::vector< std::vector<SimCar*> >& Garages() const;
+    const std::vector<SimRoad*>& Roads() const;
+    const std::vector<SimCar*>& Cars() const;
     void NotifyCarGetoutOnRoad(const int& time, const SimCar* car);
     void NotifyCarReachGoal(const int& time, const SimCar* car);
     bool IsComplete() const;
@@ -43,12 +44,16 @@ public:
     const unsigned int& GetReachCarsN() const;
     int GetOnRoadCarsN() const;
 
-    void ResetScenario();
     SimCar* AddCar(Car* car);
-    void RemoveCar(const int& id);
+    void RemoveCar(SimCar* car);
+    //void ReplaceGarage(const std::vector< std::vector<SimCar*> >& garage); 
+    void ResetScenario();
     
     void SaveToFile() const;
     void SaveToFile(const char* file) const;
+
+private:
+    void Clear();
 
 };//class SimScenario
 

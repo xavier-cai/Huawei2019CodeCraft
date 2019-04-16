@@ -1,6 +1,5 @@
 #include "simulator.h"
 #include "scheduler.h"
-#include "scenario.h"
 #include "assert.h"
 #include "log.h"
 #include <algorithm>
@@ -76,7 +75,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
         return maxS2;
     NotifyFirstPriority(time, scenario, car);
     ASSERT(car->GetNextRoadId() >= 0);
-    int nextLimit = std::min(car->GetCar()->GetMaxSpeed(), Scenario::GetRoad(car->GetNextRoadId())->GetLimit());
+    int nextLimit = std::min(car->GetCar()->GetMaxSpeed(), Scenario::Roads()[car->GetNextRoadId()]->GetLimit());
     int s2 = std::min(maxS2, nextLimit - s1);
     if (s2 <= 0)
         return 0;
@@ -84,7 +83,7 @@ int Simulator::GetPositionInNextRoad(const int& time, SimScenario& scenario, Sim
 }
 
 //car on first priority
-SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const
+SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, const SimRoad* road, const int& crossId) const
 {
     SimCar* ret = 0;
     int position = road->GetRoad()->GetLength() + 1;
@@ -94,7 +93,7 @@ SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scen
         auto& list = road->GetCarsTo(i, crossId);
         if (list.size() > 0)
         {
-            SimCar* car = &scenario.Cars()[(*list.begin())->GetId()];
+            SimCar* car = scenario.Cars()[(*list.begin())->GetId()];
             if (car->GetSimState(time) != SimCar::SCHEDULED && !car->GetIsIgnored())
             {
                 int limit = std::min(car->GetCar()->GetMaxSpeed(), road->GetRoad()->GetLimit());
@@ -118,7 +117,7 @@ SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scen
     return ret;
 }
 
-bool CompareCarsPriority(SimCar* & a, SimCar* & b)
+bool CompareCarsPriority(SimCar* a, SimCar* b)
 {
     ASSERT(a->GetCurrentCross() == b->GetCurrentCross());
     auto dirA = a->GetCurrentTurnType();
@@ -134,7 +133,7 @@ bool CompareCarsPriority(SimCar* & a, SimCar* & b)
 //pass cross or just forward, return [true] means scheduled; [false] means waiting, require the car is the first one on its lane
 bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, SimCar* car)
 {
-    SimRoad* road = &scenario.Roads()[car->GetCurrentRoad()->GetId()];
+    SimRoad* road = scenario.Roads()[car->GetCurrentRoad()->GetId()];
     ///logic moved
     Cross* cross = car->GetCurrentCross();
     auto& carlist = road->GetCarsTo(car->GetCurrentLane(), cross->GetId());
@@ -152,21 +151,22 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
     //try pass cross
     if (nextRoadId >= 0)
     {
-        std::list<SimCar*> priority;
+        std::vector<SimCar*> priority;
+        priority.reserve(4);
         DirectionType_Foreach(dir,
             Road* tmpRoad = cross->GetRoad(dir);
             if (tmpRoad != 0 && tmpRoad->GetId() != road->GetRoad()->GetId() && tmpRoad->GetId() != nextRoadId && tmpRoad->CanReachTo(cross->GetId()))
             {
-                SimCar* car = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, &scenario.Roads()[tmpRoad->GetId()], cross->GetId());
+                SimCar* car = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, scenario.Roads()[tmpRoad->GetId()], cross->GetId());
                 if (car != 0 && (car->GetNextRoadId() == nextRoadId || (car->GetCurrentTurnType() == Cross::DIRECT && car->GetCar()->GetToCross() == cross && cross->GetTurnDirection(car->GetCurrentRoad()->GetId(), nextRoadId) == Cross::DIRECT)))
                     priority.push_back(car);
             }
         );
         priority.push_back(car);
-        priority.sort(&CompareCarsPriority);
-        if (*priority.begin() != car)
+        std::sort(priority.begin(), priority.end(), &CompareCarsPriority);
+        if (priority[0] != car)
         {
-            car->UpdateWaiting(time, *priority.begin());
+            car->UpdateWaiting(time, priority[0]);
             return false;
         }
     }
@@ -183,7 +183,7 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
         return true;
     }
 
-    SimRoad* nextRoad = &scenario.Roads()[nextRoadId];
+    SimRoad* nextRoad = scenario.Roads()[nextRoadId];
     bool isFromOrTo = nextRoad->IsFromOrTo(cross->GetId());
     int nextPosition = GetPositionInNextRoad(time, scenario, car);
     if (nextPosition <= 0) //just forward
@@ -203,7 +203,7 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
         auto& inlist = nextRoad->GetCarsFrom(i, cross->GetId());
         SimCar* lastcar = 0;
         if (inlist.size() > 0)
-            lastcar = &scenario.Cars()[(*--inlist.end())->GetId()];
+            lastcar = scenario.Cars()[(*--inlist.end())->GetId()];
         //need wait
         if (lastcar != 0 && lastcar->GetCurrentPosition() <= nextPosition && lastcar->GetSimState(time) != SimCar::SCHEDULED)
         {
@@ -234,11 +234,11 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
 
 void UpdateCarsInLane(const int& time, SimScenario& scenario, SimRoad* &road, const int& lane, const bool& opposite, const bool& canBreak)
 {
-    auto& cars = opposite ? road->GetCarsOpposite(lane) : road->GetCars(lane);
+    auto& cars = road->GetCars(lane, opposite);
     SimCar* frontCar = 0;
-    for (auto carIte = cars.begin(); carIte != cars.end(); ++carIte)
+    for (uint i = 0; i < cars.size(); ++i)
     {
-        SimCar* car = &scenario.Cars()[(*carIte)->GetId()];
+        SimCar* car = scenario.Cars()[cars[i]->GetId()];
         SimCar::SimState state = car->GetSimState(time);
         if (car->GetIsIgnored())
             break;
@@ -246,7 +246,7 @@ void UpdateCarsInLane(const int& time, SimScenario& scenario, SimRoad* &road, co
         {
             int speed = std::min(car->GetCurrentRoad()->GetLimit(), car->GetCar()->GetMaxSpeed());
             int nexPosition = car->GetCurrentPosition() + speed;
-            if (carIte == cars.begin())
+            if (i == 0) //the first car
             {
                 ASSERT(frontCar == 0);
                 if (nexPosition <= car->GetCurrentRoad()->GetLength()) //have no possible passing cross
@@ -292,76 +292,68 @@ void UpdateCarsInRoad(const int& time, SimScenario& scenario, SimRoad* road)
     }
 }
 
+bool CompareRoadId(SimRoad* a, SimRoad* b)
+{
+    return a->GetRoad()->GetOriginId() < b->GetRoad()->GetOriginId();
+}
+
 Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario)
 {
     Simulator::UpdateResult result;
     result.Conflict = false;
 
     NotifyScheduleStart();
-    for (auto roadIte = scenario.Roads().begin(); roadIte != scenario.Roads().end(); ++roadIte)
+    for (uint i = 0; i < scenario.Roads().size(); ++i)
     {
-        SimRoad* road = &roadIte->second;
+        SimRoad* road = scenario.Roads()[i];
         UpdateCarsInRoad(time, scenario, road);
     }
     InitializeVipCarsInGarage(time, scenario);
     GetVipOutFromGarage(time, scenario);
-    std::list<Cross*> crosses;
-    for (auto ite = Scenario::Crosses().begin(); ite != Scenario::Crosses().end(); ++ite)
-        crosses.push_back(ite->second);
-    while(crosses.size() > 0)
+    while(true)
     {
         NotifyScheduleCycleStart();
-        for (auto crossIte = crosses.begin(); crossIte != crosses.end();)
+        for (uint iCross = 0; iCross < Scenario::Crosses().size(); ++iCross)
         {
-            int crossId = (*crossIte)->GetId();
-            std::map<int, SimRoad*> roads; //roads in this cross
+            Cross* cross = Scenario::Crosses()[iCross];
+            int crossId = cross->GetId();
+            std::vector<SimRoad*> roads; //roads in this cross
+            roads.reserve(4);
             DirectionType_Foreach(dir, 
-                int id = (*crossIte)->GetRoadId(dir);
+                int id = cross->GetRoadId(dir);
                 if (id >= 0)
                 {
-                    SimRoad* road = &scenario.Roads()[id];
+                    SimRoad* road = scenario.Roads()[id];
                     if (road->GetRoad()->GetEndCrossId() == crossId ||
                         (road->GetRoad()->GetStartCrossId() == crossId && road->GetRoad()->GetIsTwoWay()))
-                        roads[id] = road;
+                        roads.push_back(road);
                 }
             );
-            //while (roads.size() > 0)
+            std::sort(roads.begin(), roads.end(), &CompareRoadId);
+
+            for (uint iRoad = 0; iRoad < roads.size(); ++iRoad)
             {
-                //bool crossConflict = true;
-                for (auto roadIte = roads.begin(); roadIte != roads.end();)
+                SimRoad* road = roads[iRoad];
+                //try pass cross (only the first priority can pass the cross)
+                SimCar* firstPriority = 0;
+                while((firstPriority = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, road, crossId)) != 0)
                 {
-                    SimRoad* road = roadIte->second;
-                    //try pass cross (only the first priority can pass the cross)
-                    SimCar* firstPriority = 0;
-                    while((firstPriority = Simulator::PeekFirstPriorityCarOnRoad(time, scenario, road, crossId)) != 0)
+                    int oldRoadId = firstPriority->GetCurrentRoad()->GetId();
+                    int lane = firstPriority->GetCurrentLane();
+                    bool opposite = !firstPriority->GetCurrentDirection();
+                    if (!Simulator::PassCrossOrJustForward(time, scenario, firstPriority))
                     {
-                        int oldRoadId = firstPriority->GetCurrentRoad()->GetId();
-                        int lane = firstPriority->GetCurrentLane();
-                        bool opposite = !firstPriority->GetCurrentDirection();
-                        if (!Simulator::PassCrossOrJustForward(time, scenario, firstPriority))
-                        {
-                            ASSERT (firstPriority->GetSimState(time) == SimCar::WAITING && firstPriority->GetWaitingCar(time) != 0);
-                            break;
-                        }
-                        //UpdateCarsInRoad(time, scenario, road);
-                        UpdateCarsInLane(time, scenario, road, lane, opposite, true);
-                        //GetVipOutFromGarage(time, scenario);
-                        GetVipOutFromGarage(time, scenario, road->GetRoad()->GetPeerCross(*crossIte)->GetId(), road->GetRoad()->GetId());
-                        //GetVipOutFromGarage(time, scenario, crossId, firstPriority->GetCurrentRoad()->GetId());
-                        //crossConflict = false;
+                        ASSERT (firstPriority->GetSimState(time) == SimCar::WAITING && firstPriority->GetWaitingCar(time) != 0);
+                        break;
                     }
-                    if (firstPriority == 0) //complete
-                        roadIte = roads.erase(roadIte);
-                    else
-                        ++roadIte;
+                    //UpdateCarsInRoad(time, scenario, road);
+                    UpdateCarsInLane(time, scenario, road, lane, opposite, true);
+                    //GetVipOutFromGarage(time, scenario);
+                    GetVipOutFromGarage(time, scenario, road->GetRoad()->GetPeerCross(cross)->GetId(), road->GetRoad()->GetId());
+                    //GetVipOutFromGarage(time, scenario, crossId, firstPriority->GetCurrentRoad()->GetId());
+                    //crossConflict = false;
                 }
-                //if(crossConflict)
-                    //break;
             }
-            if(roads.size() == 0)
-                crossIte = crosses.erase(crossIte);
-            else
-                ++crossIte;
         }
         if (GetIsCompleted(scenario)) //complete
         {
@@ -388,7 +380,7 @@ std::pair<int, int> Simulator::CanCarGetOutFromGarage(const int& time, SimScenar
 {
     int roadId = car->GetNextRoadId();
     ASSERT(roadId >= 0);
-    SimRoad* road = &scenario.Roads()[roadId];
+    SimRoad* road = scenario.Roads()[roadId];
     int maxLength = std::min(car->GetCar()->GetMaxSpeed(), road->GetRoad()->GetLimit());
     int crossId = car->GetCar()->GetFromCrossId();
     for (int i = 1; i <= road->GetRoad()->GetLanes(); ++i)
@@ -396,7 +388,7 @@ std::pair<int, int> Simulator::CanCarGetOutFromGarage(const int& time, SimScenar
         auto& cars = road->GetCarsFrom(i, crossId);
         if (cars.size() > 0)
         {
-            SimCar* lastCar = &scenario.Cars()[(*--cars.end())->GetId()];
+            SimCar* lastCar = scenario.Cars()[cars.back()->GetId()];
             ASSERT(car->GetCar()->GetIsVip() || lastCar->GetSimState(time) == SimCar::SCHEDULED);
             ASSERT(lastCar->GetCurrentPosition() > 0);
             if (lastCar->GetSimState(time) != SimCar::SCHEDULED && lastCar->GetCurrentPosition() <= maxLength)
@@ -421,7 +413,7 @@ bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimC
     {
         int roadId = car->GetNextRoadId();
         ASSERT(roadId >= 0);
-        SimRoad* road = &scenario.Roads()[roadId];
+        SimRoad* road = scenario.Roads()[roadId];
         bool isFromOrTo = road->IsFromOrTo(car->GetCar()->GetFromCrossId());
         car->UpdateOnRoad(time, road->GetRoad(), canGoout.first, isFromOrTo, canGoout.second);
         road->RunIn(car->GetCar(), canGoout.first, !isFromOrTo);
@@ -431,168 +423,130 @@ bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimC
     return goout;
 }
 
+bool CompareCarsInGarage(SimCar* a, SimCar* b)
+{
+    //only compare VIP or non-VIP cars
+    ASSERT(a->GetCar()->GetIsVip() == b->GetCar()->GetIsVip());
+    if (a->GetRealTime() != b->GetRealTime())
+        return a->GetRealTime() < b->GetRealTime();
+    return a->GetCar()->GetOriginId() < b->GetCar()->GetOriginId();
+}
+
 /* non-VIP cars */
 void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
 {
     int getOutCounter = 0;
     //cars in garage
-    for (auto ite = Scenario::Crosses().begin(); ite != Scenario::Crosses().end(); ++ite)
+    for (uint i = 0; i < scenario.Garages().size(); ++i)
     {
-        int crossId = ite->second->GetId();
-        auto findGarage = scenario.Garages().find(crossId);
-        if (findGarage != scenario.Garages().end()) //find it!
+        auto& garage = scenario.Garages()[i];
+        std::vector<SimCar*> cangoCars;
+        cangoCars.reserve(Scenario::GetGarageSize(i) / 10);
+        for (uint iIndex = 0; iIndex < garage.size(); ++iIndex)
         {
-            std::map< int, std::list<std::map<int, SimCar*>::iterator> > cangoCars;
-            for (auto garageCarIte = findGarage->second.begin(); garageCarIte != findGarage->second.end(); ++garageCarIte)
+            SimCar* car = garage[iIndex];
+            if (car != 0 && car->GetIsInGarage()
+                && car->GetRealTime() <= time) //can get out
             {
-                SimCar* car = garageCarIte->second;
-                if (car->GetRealTime() <= time) //can get out
-                {
-                    if (car->GetCar()->GetIsVip())
-                        ASSERT(!GetCarOutFromGarage(time, scenario, car));
-                    cangoCars[car->GetRealTime()].push_back(garageCarIte);
-                }
+                if (car->GetCar()->GetIsVip())
+                    ASSERT(!GetCarOutFromGarage(time, scenario, car));
+                else
+                    cangoCars.push_back(car);
             }
-            for (auto cangoTimeIte = cangoCars.begin(); cangoTimeIte != cangoCars.end(); ++cangoTimeIte)
-            {
-                const int& cangoTime = cangoTimeIte->first;
-                for (auto cangoCarIte = cangoTimeIte->second.begin(); cangoCarIte != cangoTimeIte->second.end(); ++cangoCarIte)
-                {
-                    SimCar* car = (*cangoCarIte)->second;
-                    if (m_scheduler != 0
-                        && !car->GetCar()->GetIsPreset()
-                        && !car->GetCar()->GetIsVip()) //vip car is not expect get out in function
-                        m_scheduler->HandleGetoutGarage(time, scenario, car);
-                    ASSERT(car->GetRealTime() == cangoTime || car->GetRealTime() > time);
-                    if (car->GetRealTime() > time)
-                        continue;
+        }
+        std::sort(cangoCars.begin(), cangoCars.end(), &CompareCarsInGarage);
 
-                    /* it's time to go! */
-                    bool goout = GetCarOutFromGarage(time, scenario, car);
-                    ASSERT(!goout || !car->GetCar()->GetIsVip()); //vip car is not expect get out in function
-                    //if (!car->GetCar()->GetIsPreset())
-                    //    car->SetRealTime(time + (goout ? 0 : 1)); //cheater
-                    if (!goout)
-                    {
-                        car->UpdateStayInGarage(time);
-                    }
-                    else //go out
-                    {
-                        findGarage->second.erase(*cangoCarIte);
-                        ++getOutCounter;
-                    }
-                }
+        for (uint iIndex = 0; iIndex < cangoCars.size(); ++iIndex)
+        {
+            SimCar* car = cangoCars[iIndex];
+            int oriTime = car->GetRealTime();
+            if (m_scheduler != 0
+                && !car->GetCar()->GetIsPreset()
+                && !car->GetCar()->GetIsVip()) //vip car is not expect get out in function
+                m_scheduler->HandleGetoutGarage(time, scenario, car);
+            ASSERT(car->GetRealTime() == oriTime || car->GetRealTime() > time);
+            if (car->GetRealTime() > time)
+                continue;
+
+            /* it's time to go! */
+            bool goout = GetCarOutFromGarage(time, scenario, car);
+            ASSERT(!goout || !car->GetCar()->GetIsVip()); //vip car is not expect get out in function
+            if (!goout)
+            {
+                car->UpdateStayInGarage(time);
             }
-            if (findGarage->second.size() == 0) //no car in garage
-                scenario.Garages().erase(findGarage);
+            else //go out
+            {
+                ++getOutCounter;
+            }
         }
     }
     if (getOutCounter > 0)
         LOG("@" << time << " number of non-VIP cars get on road form garage : " << getOutCounter);
 }
 
-bool CompareCarsInGarage(const std::map<int, SimCar*>::iterator& a, const std::map<int, SimCar*>::iterator& b)
-{
-    //only compare VIP cars
-    //if ((*a)->GetCar()->GetIsVip() != (*b)->GetCar()->GetIsVip())
-    //    return (*a)->GetCar()->GetIsVip();
-    if (a->second->GetRealTime() != b->second->GetRealTime())
-        return a->second->GetRealTime() < b->second->GetRealTime();
-    return a->second->GetCar()->GetId() < b->second->GetCar()->GetId();
-}
-
 void Simulator::InitializeVipCarsInGarage(const int& time, SimScenario& scenario)
 {
     m_vipCarsInGarage.clear();
-    for (auto garageIte = scenario.Garages().begin(); garageIte != scenario.Garages().end(); ++garageIte)
+    m_vipCarsInGarage.resize(scenario.Garages().size());
+    for (uint i = 0; i < scenario.Garages().size(); ++i)
     {
-        auto& garage = garageIte->second;
-        auto& vipGarage = m_vipCarsInGarage[garageIte->first];
-        for (auto carIte = garage.begin(); carIte != garage.end(); ++carIte)
+        auto& garage = scenario.Garages()[i];
+        auto& vipGarage = m_vipCarsInGarage[i];
+        vipGarage.clear();
+        vipGarage.reserve(garage.size() / 10);
+        for (uint iIndex = 0; iIndex < garage.size(); ++iIndex)
         {
-            const SimCar* car = carIte->second;
-            if (car->GetCar()->GetIsVip() && car->GetRealTime() <= time)
+            SimCar* car = garage[iIndex];
+            if (car != 0 && car->GetIsInGarage()
+                && car->GetCar()->GetIsVip() && car->GetRealTime() <= time)
             {
-                vipGarage.push_back(carIte);
+                vipGarage.push_back(car);
             }
         }
-        vipGarage.sort(&CompareCarsInGarage);
+        std::sort(vipGarage.begin(), vipGarage.end(), &CompareCarsInGarage);
     }
-}
-
-Simulator::GarageList::iterator Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, const Simulator::GarageList::iterator& garageIte, const int& roadId)
-{
-    auto& oriGarage = scenario.Garages()[garageIte->first];
-    for (auto ite = garageIte->second.begin(); ite != garageIte->second.end();)
-    {
-        SimCar* car = (*ite)->second;
-        int oldTime = car->GetRealTime();
-        if (m_scheduler != 0
-            && !car->GetCar()->GetIsPreset())
-            m_scheduler->HandleGetoutGarage(time, scenario, car);
-        ASSERT(car->GetNextRoadId() >= 0);
-        ASSERT(car->GetRealTime() == oldTime || car->GetRealTime() > time);
-        if (car->GetRealTime() > time)
-        {
-            ite = garageIte->second.erase(ite);
-        }
-        else
-        {
-            if (roadId >= 0 && car->GetNextRoadId() != roadId)
-            {
-                //ASSERT(false);//no way!
-                ++ite;
-            }
-            else
-            {
-                if (GetCarOutFromGarage(time, scenario, car))
-                {
-                    oriGarage.erase(*ite);
-                    ite = garageIte->second.erase(ite);
-                }
-                else //go on
-                {
-                    ++ite;
-                }
-            }
-        }
-    }
-    if (garageIte->second.size() <= 0)
-        return m_vipCarsInGarage.erase(garageIte);
-    auto copyIte = garageIte;
-    return ++copyIte;
 }
 
 void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, const int& crossId, const int& roadId)
 {
     if (crossId >= 0)
     {
-        //ASSERT(false);//no way!
-        ASSERT(roadId >= 0);
-        auto find = m_vipCarsInGarage.find(crossId);
-        //ASSERT(find != m_vipCarsInGarage.end());
-        if (find != m_vipCarsInGarage.end())
-            GetVipOutFromGarage(time, scenario, find, roadId);
+        auto& garage = m_vipCarsInGarage[crossId];
+        for (uint i = 0; i < garage.size(); ++i)
+        {
+            SimCar* car = garage[i];
+            if (!car->GetIsInGarage()) continue;
+            int oldTime = car->GetRealTime();
+            if (m_scheduler != 0
+                && !car->GetCar()->GetIsPreset())
+                m_scheduler->HandleGetoutGarage(time, scenario, car);
+            ASSERT(car->GetNextRoadId() >= 0);
+            ASSERT(car->GetRealTime() == oldTime || car->GetRealTime() > time);
+            if (roadId < 0 || car->GetNextRoadId() == roadId)
+                GetCarOutFromGarage(time, scenario, car);
+        }
     }
     else
     {
         ASSERT(roadId < 0);
-        for (auto ite = m_vipCarsInGarage.begin(); ite != m_vipCarsInGarage.end(); )
-            ite = GetVipOutFromGarage(time, scenario, ite, roadId);
+        for (uint i = 0; i < m_vipCarsInGarage.size(); ++i)
+            GetVipOutFromGarage(time, scenario, i, roadId);
     }
 }
 
 void Simulator::GetDeadLockCars(const int& time, SimScenario& scenario, std::list<SimCar*>& result, int n) const
 {
-    for (auto crossIte = Scenario::Crosses().begin(); crossIte != Scenario::Crosses().end(); ++crossIte)
+    for (uint iCross = 0; iCross < Scenario::Crosses().size(); ++iCross)
     {
-        int crossId = crossIte->second->GetId();
+        Cross* cross = Scenario::Crosses()[iCross];
+        int crossId = cross->GetId();
         for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; ++i)
         {
-            int id = crossIte->second->GetRoadId((Cross::DirectionType)i);
+            int id = cross->GetRoadId((Cross::DirectionType)i);
             if (id >= 0)
             {
-                SimRoad* road = &scenario.Roads()[id];
+                SimRoad* road = scenario.Roads()[id];
                 if (road->GetRoad()->GetEndCrossId() == crossId ||
                     (road->GetRoad()->GetStartCrossId() == crossId && road->GetRoad()->GetIsTwoWay()))
                 {
@@ -622,7 +576,7 @@ void Simulator::PrintCrossState(const int& time, SimScenario& scenario, Cross* c
         int id = cross->GetRoadId((Cross::DirectionType)i);
         if (id >= 0)
         {
-            SimRoad* road = &scenario.Roads()[id];
+            SimRoad* road = scenario.Roads()[id];
             if (road->GetRoad()->GetEndCrossId() == crossId ||
                 (road->GetRoad()->GetStartCrossId() == crossId && road->GetRoad()->GetIsTwoWay()))
             {
@@ -633,7 +587,7 @@ void Simulator::PrintCrossState(const int& time, SimScenario& scenario, Cross* c
                     auto& cars = road->GetCarsTo(j, crossId);
                     for (auto carIte = cars.begin(); carIte != cars.end(); ++carIte)
                     {
-                        SimCar* car = &scenario.Cars()[(*carIte)->GetId()];
+                        SimCar* car = scenario.Cars()[(*carIte)->GetId()];
                         if (car->GetSimState(time) == SimCar::SCHEDULED || GetPositionInNextRoad(time, scenario, car) <= 0)
                             break;
                         LOG("car [" << car->GetCar()->GetId() << "]"
@@ -660,11 +614,11 @@ void Simulator::PrintDeadLock(const int& time, SimScenario& scenario) const
             Cross* cross = car->GetCurrentCross();
             Road* road = car->GetCurrentRoad();
             LOG("the " << *(car->GetCar())
-                << " cross " << cross->GetId()
-                << " road " << road->GetId()
+                << " cross " << cross->GetOriginId() << "(" << cross->GetId() << ")"
+                << " road " << road->GetOriginId() << "(" << road->GetId() << ")"
                 << " lane " << car->GetCurrentLane()
                 << " position " << car->GetCurrentPosition()
-                << " next " << car->GetNextRoadId()
+                << " next " << "(" << car->GetNextRoadId() << ")"
                 << " dir " << (car->GetNextRoadId() < 0 ? Cross::DIRECT : cross->GetTurnDirection(road->GetId(), car->GetNextRoadId()))
                 << " waiting for " << *(car->GetWaitingCar(time)->GetCar())
                 );

@@ -7,6 +7,7 @@ class Cross;
 class Car
 {
 private:
+    int m_originId;
     int m_id;
     int m_fromCrossId;
     int m_toCrossId;
@@ -20,9 +21,10 @@ private:
     
 public:
     Car();
-    Car(const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime, const bool& isVip, const bool& isPreset);
+    Car(const int& origin, const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime, const bool& isVip, const bool& isPreset);
     ~Car();
     
+    const int& GetOriginId() const;
     const int& GetId() const;
     const int& GetFromCrossId() const;
     const int& GetToCrossId() const;

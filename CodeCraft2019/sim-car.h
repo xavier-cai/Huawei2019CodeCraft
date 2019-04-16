@@ -41,7 +41,7 @@ private:
     
     /* indicate position of car in simulation */
     int m_currentTraceIndex;
-    Trace::Node m_currentTraceNode;
+    //Trace::Node m_currentTraceNode;
     Road* m_currentRoad;
     int m_currentLane; //[1~number of lanes]
     bool m_currentDirection; //[true]: current road start->end, [false]: current road end->start
@@ -83,8 +83,8 @@ public:
     SimCar* GetWaitingCar(int time);
     
     const int& GetCurrentTraceIndex() const;
-    Trace::Node GetCurrentTraceNode(); //iterator of the next road ID
-    Trace::NodeConst GetCurrentTraceNode() const;
+    //Trace::Node GetCurrentTraceNode(); //iterator of the next road ID
+    //Trace::NodeConst GetCurrentTraceNode() const;
     Road* GetCurrentRoad() const;
     int GetCurrentLane() const;
     bool GetCurrentDirection() const;

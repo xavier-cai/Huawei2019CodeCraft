@@ -140,7 +140,7 @@ void MapGenerator::GenerateMap()
                         tmpSstart = id + 1;
                         tmpEnd = id;
                     }
-                    m_roads.insert(std::make_pair(idHorizon, Road(idHorizon, GetLength(), GetLimit(), GetLanes(), tmpSstart, tmpEnd, geneHorizon == 2)));
+                    m_roads.insert(std::make_pair(idHorizon, Road(idHorizon, 0, GetLength(), GetLimit(), GetLanes(), tmpSstart, tmpEnd, geneHorizon == 2)));
                 }
                 if (geneVertical > 0)
                 {
@@ -151,14 +151,14 @@ void MapGenerator::GenerateMap()
                         tmpSstart = id + width;
                         tmpEnd = id;
                     }
-                    m_roads.insert(std::make_pair(idVertical, Road(idVertical, GetLength(), GetLimit(), GetLanes(), tmpSstart, tmpEnd, geneVertical == 2)));
+                    m_roads.insert(std::make_pair(idVertical, Road(idVertical, 0, GetLength(), GetLimit(), GetLanes(), tmpSstart, tmpEnd, geneVertical == 2)));
                 }
             }//create road
             Road* north = i > 0 ? m_crosses[(i - 1) * width + j + 1].GetSouthRoad() : 0;
             Road* west = j > 0 ? m_crosses[id - 1].GetEasthRoad() : 0;
             Road* east = geneHorizon > 0 ? &m_roads[idHorizon] : 0;
             Road* south = geneVertical > 0 ? &m_roads[idVertical] : 0;
-            Cross& cross = m_crosses.insert(std::make_pair(id, Cross(id
+            Cross& cross = m_crosses.insert(std::make_pair(id, Cross(id, 0
                 , north != 0 ? north->GetId() : -1
                 , east != 0 ? east->GetId() : -1
                 , south != 0 ? south->GetId() : -1
@@ -179,8 +179,8 @@ void MapGenerator::GenerateMap()
 
 bool MapGenerator::CheckPathValid() const
 {
-    int arriveCount = 1;
-    int backCount = 1;
+    uint arriveCount = 1;
+    uint backCount = 1;
     std::map<int, bool> arriveMap;
     std::map<int, bool> backMap;
     for (auto ite = m_crosses.begin(); ite != m_crosses.end(); ++ite)
@@ -231,10 +231,10 @@ void MapGenerator::SaveToFile() const
         for (auto ite = m_crosses.begin(); ite != m_crosses.end(); ++ite)
         {
             const Cross& cross = ite->second;
-            ofs << '(' << cross.GetId()
+            ofs << '(' << cross.GetOriginId()
                 << ", " << cross.GetNorthRoadId()
                 << ", " << cross.GetEasthRoadId()
-                << ", " << cross.GetSouthhRoadId()
+                << ", " << cross.GetSouthRoadId()
                 << ", " << cross.GetWestRoadId()
                 << ")\n";
         }
@@ -248,7 +248,7 @@ void MapGenerator::SaveToFile() const
         for (auto ite = m_roads.begin(); ite != m_roads.end(); ++ite)
         {
             const Road& road = ite->second;
-            ofs << '(' << road.GetId()
+            ofs << '(' << road.GetOriginId()
                 << ", " << road.GetLength()
                 << ", " << road.GetLimit()
                 << ", " << road.GetLanes()
@@ -267,7 +267,7 @@ void MapGenerator::SaveToFile() const
         for (auto ite = m_cars.begin(); ite != m_cars.end(); ++ite)
         {
             const Car& car = ite->second;
-            ofs << '(' << car.GetId()
+            ofs << '(' << car.GetOriginId()
                 << ", " << car.GetFromCrossId()
                 << ", " << car.GetToCrossId()
                 << ", " << car.GetMaxSpeed()
@@ -323,7 +323,7 @@ void MapGenerator::Generate(int argc, char *argv[])
         int dealta = Random::Uniform(1, maxCrossId);
         int end = (start + dealta) % maxCrossId + 1;
         int id = i + 10001;
-        m_cars.insert(std::make_pair(id, Car(id, start, end, GetSpeed(), GetPlanTime(), Random::Uniform() < m_vipProb, false)));
+        m_cars.insert(std::make_pair(id, Car(id, 0, start, end, GetSpeed(), GetPlanTime(), Random::Uniform() < m_vipProb, false)));
     }
     SaveToFile();
     LOG("finding path");
@@ -337,7 +337,7 @@ void MapGenerator::Generate(int argc, char *argv[])
     for (auto ite = scenario.Cars().begin(); ite != scenario.Cars().end(); ++ite)
     {
         if (Random::Uniform() < m_presetProb)
-            m_preset[ite->first] = &(ite->second);
+            m_preset[(*ite)->GetCar()->GetOriginId()] = *ite;
     }
     SaveToFile();
     LOG("generation complete");

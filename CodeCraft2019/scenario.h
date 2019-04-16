@@ -1,6 +1,7 @@
 #ifndef SCENARIO_H
 #define SCENARIO_H
 
+#include <vector>
 #include <map>
 #include "car.h"
 #include "cross.h"
@@ -9,20 +10,23 @@
 #include "map-array.h"
 #include "memory-pool.h"
 
+typedef unsigned int uint;
+
 class Scenario
 {
 private:
-    std::map<int, Car*> m_cars;
-    std::map<int, Cross*> m_crosses;
-    std::map<int, Road*> m_roads;
-    MemoryPool m_memoryPool;
-    MapArray<int, Car>* m_carArray;
-    MapArray<int, Cross>* m_crossArray;
-    MapArray<int, Road>* m_roadArray;
-    IndexerEnhanced<int> m_carIndexer; //for indexing Car ID to index
-    IndexerEnhanced<int> m_crossIndexer; //for indexing Cross ID to index
-    IndexerEnhanced<int> m_roadIndexer; //for indexing Road ID to index
-    IndexerEnhanced<Cross::DirectionType> m_directionIndexer; //for indexing Direction to index
+    std::vector<Car*> m_cars;
+    std::vector<Cross*> m_crosses;
+    std::vector<Road*> m_roads;
+    std::vector<int> m_garageSize;
+    std::vector<int> m_garageInnerIndex;
+
+    std::map<int, int> m_carsIndexMap;
+    std::map<int, int> m_crossesIndexMap;
+    std::map<int, int> m_roadsIndexMap;
+
+    int m_vipCarsN;
+    int m_presetCarsN;
     
     Scenario();
     static Scenario Instance;
@@ -32,34 +36,23 @@ private:
     bool HandleRoad(std::istream& is);
     bool HandleAnswer(std::istream& is);
     void DoInitialize();
+    void DoMoreInitialize();
     
 public:
     ~Scenario();
     
     static void Initialize();
-    static const std::map<int, Car*>& Cars();
-    static const std::map<int, Cross*>& Crosses();
-    static const std::map<int, Road*>& Roads();
-    static Car* GetCar(const int& id);
-    static Cross* GetCross(const int& id);
-    static Road* GetRoad(const int& id);
-    static const IndexerEnhanced<int>& GetCarIndexer();
-    static const IndexerEnhanced<int>& GetCrossIndexer();
-    static const IndexerEnhanced<int>& GetRoadIndexer();
-    static const IndexerEnhanced<Cross::DirectionType>& GetDirectionIndexer();
+    static const std::vector<Car*>& Cars();
+    static const std::vector<Cross*>& Crosses();
+    static const std::vector<Road*>& Roads();
+    static const int& GetGarageSize(const int& id);
+    static const int& GetGarageInnerIndex(const int& carId);
+    static const int& MapCarOriginToIndex(const int& origin);
+    static const int& MapCrossOriginToIndex(const int& origin);
+    static const int& MapRoadOriginToIndex(const int& origin);
     static const int& GetVipCarsN();
-
-    template <typename _TV>
-    static int CalculateIndexArraySize(const std::map<int, _TV>& map)
-    {
-        return map.size() > 1 ? ((--map.end())->first - map.begin()->first + 1) : map.size();
-    }
+    static const int& GetPresetCarsN();
     
 };//class Scenario
-
-#define _a(id) Scenario::GetCarIndexer().Output(id)
-#define _c(id) Scenario::GetCrossIndexer().Output(id)
-#define _r(id) Scenario::GetRoadIndexer().Output(id)
-#define _d(id) Scenario::GetDirectionIndexer().Output(id)
 
 #endif

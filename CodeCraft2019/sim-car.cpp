@@ -3,7 +3,6 @@
 #include "log.h"
 #include "tactics.h"
 #include "sim-scenario.h"
-#include "scenario.h"
 #include <algorithm>
 
 Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
@@ -27,18 +26,13 @@ SimCar::SimCar(Car* car)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
     ASSERT(car != 0);
-    m_currentTraceNode = m_trace->Head();
-    auto find = Tactics::Instance.GetRealTimes().find(car->GetId());
-    if (find == Tactics::Instance.GetRealTimes().end())
+    //m_currentTraceNode = m_trace->Head();
+    m_realTime = &Tactics::Instance.GetRealTimes()[car->GetId()];
+    if (*m_realTime < 0)
     {
-        m_realTime = &Tactics::Instance.GetRealTimes()[car->GetId()];
         *m_realTime = car->GetPlanTime();
     }
-    else
-    {
-        m_realTime = &Tactics::Instance.GetRealTimes()[car->GetId()];
-        ASSERT(*m_realTime >= car->GetPlanTime());
-    }
+    ASSERT(*m_realTime >= car->GetPlanTime());
 }
 
 void SimCar::Reset()
@@ -47,7 +41,7 @@ void SimCar::Reset()
     m_isReachGoal = false;
     m_isLockOnNextRoad = false;
     m_lockOnNextRoadTime = -1;
-    m_currentTraceNode = m_trace->Head();
+    //m_currentTraceNode = m_trace->Head();
     m_startTime = -1;
     m_lastUpdateTime = -1;
     m_simState = SCHEDULED;
@@ -144,7 +138,7 @@ const bool& SimCar::GetIsForceOutput() const
 
 int SimCar::GetNextRoadId() const
 {
-    return *m_currentTraceNode;
+    return (*m_trace)[m_currentTraceIndex];
 }
 
 void SimCar::SetSimState(int time, SimState state)
@@ -179,6 +173,7 @@ const int& SimCar::GetCurrentTraceIndex() const
     return m_currentTraceIndex;
 }
 
+/*
 Trace::Node SimCar::GetCurrentTraceNode()
 {
     return m_currentTraceNode;
@@ -188,6 +183,7 @@ Trace::NodeConst SimCar::GetCurrentTraceNode() const
 {
     return m_currentTraceNode;
 }
+*/
 
 Road* SimCar::GetCurrentRoad() const
 {
@@ -260,10 +256,10 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
             m_updateGoOnNewRoad.Invoke(this, oldRoad);
         return;
     }
-    LOG("@" << time << " the " << *m_car << " go on the road " << road->GetId()
+    LOG("@" << time << " the " << *m_car << " go on the road " << road->GetOriginId() << "(" << road->GetId() << ")"
         << " lane " << lane
-        << " from " << (direction ? road->GetStartCrossId() : road->GetEndCrossId())
-        << " to " << (direction ? road->GetEndCrossId() : road->GetStartCrossId())
+        << " from " << (direction ? road->GetStartCross()->GetOriginId() : road->GetEndCross()->GetOriginId()) << "(" << (direction ? road->GetStartCross()->GetId() : road->GetEndCross()->GetId()) << ")"
+        << " to " << (direction ? road->GetEndCross()->GetOriginId() : road->GetStartCross()->GetOriginId()) << "(" << (direction ? road->GetEndCross()->GetId() : road->GetStartCross()->GetId()) << ")"
         << " position " << position
         << (m_currentRoad == 0 ? " *" : ""));
     ASSERT(road != 0);
@@ -282,12 +278,14 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
     }
     else
     {
-        ASSERT(m_currentTraceNode != m_trace->Head());
-        ASSERT(*(m_currentTraceNode - 1) == m_currentRoad->GetId());
+        ASSERT(m_currentTraceIndex != 0);
+        ASSERT((*m_trace)[m_currentTraceIndex - 1] == m_currentRoad->GetId());
+        //ASSERT(m_currentTraceNode != m_trace->Head());
+        //ASSERT(*(m_currentTraceNode - 1) == m_currentRoad->GetId());
     }
     ASSERT_MSG(road->GetId() == GetNextRoadId(), "not on the correct road, now:" << road->GetId() << " expect:" << GetNextRoadId());
     Road* oldRoad = m_currentRoad;
-    ++m_currentTraceNode;
+    //++m_currentTraceNode;
     ++m_currentTraceIndex;
     m_currentRoad = road;
     m_currentLane = lane;
@@ -300,7 +298,7 @@ void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int po
 void SimCar::UpdatePosition(int time, int position)
 {
     LOG("@" << time << " the " << *m_car << " move from " << m_currentPosition << " to " << position
-        << " on road " << m_currentRoad->GetId()
+        << " on road " << m_currentRoad->GetOriginId() << "(" << m_currentRoad->GetId() << ")"
         << " lane " << m_currentLane
         << " dir " << m_currentDirection);
     auto state = GetSimState(time);
@@ -354,7 +352,7 @@ int SimCar::CalculateTime(bool useCache)
         int lastLeft = 0;
         for (auto ite = m_trace->Head(); ite != m_trace->Tail(); ++ite)
         {
-            Road* road = Scenario::GetRoad(*ite);
+            Road* road = Scenario::Roads()[*ite];
             int length = road->GetLength();
             int limit = std::min(m_car->GetMaxSpeed(), road->GetLimit());
             if (lastLeft > 0)

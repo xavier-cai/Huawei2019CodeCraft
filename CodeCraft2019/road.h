@@ -9,6 +9,7 @@ class Cross;
 class Road
 {
 private:
+    int m_originId;
     int m_id;
     int m_length;
     int m_limit;
@@ -22,9 +23,10 @@ private:
     
 public:
     Road();
-    Road(const int& id, const int& length, const int& limit, const int& lanes, const int& startCrossId, const int& endCrossId, const bool& isTwoWay);
+    Road(const int& origin, const int& id, const int& length, const int& limit, const int& lanes, const int& startCrossId, const int& endCrossId, const bool& isTwoWay);
     ~Road();
     
+    const int& GetOriginId() const;
     const int& GetId() const;
     const int& GetLength() const;
     const int& GetLimit() const;
@@ -35,6 +37,8 @@ public:
 
     void SetLimit(const int& limit);
     void SetLength(const int& length);
+    void SetStartCrossId(const int& id);
+    void SetEndCrossId(const int& id);
     void SetStartCross(Cross* cross);
     void SetEndCross(Cross* cross);
     Cross* GetStartCross() const;

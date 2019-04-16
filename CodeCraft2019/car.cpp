@@ -7,14 +7,19 @@ Car::Car()
     ASSERT(false);
 }
 
-Car::Car(const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime, const bool& isVip, const bool& isPreset)
-    : m_id(id), m_fromCrossId(fromCrossId), m_toCrossId(toCrossId), m_maxSpeed(maxSpeed), m_planTime(planTime)
+Car::Car(const int& origin, const int& id, const int& fromCrossId, const int& toCrossId, const int& maxSpeed, const int& planTime, const bool& isVip, const bool& isPreset)
+    : m_originId(origin), m_id(id), m_fromCrossId(fromCrossId), m_toCrossId(toCrossId), m_maxSpeed(maxSpeed), m_planTime(planTime)
     , m_isVip(isVip), m_isPreset(isPreset)
     , m_fromCross(0), m_toCross(0)
 { }
 
 Car::~Car()
 { }
+
+const int& Car::GetOriginId() const
+{
+    return m_originId;
+}
 
 const int& Car::GetId() const
 {
@@ -94,5 +99,5 @@ std::ostream& operator << (std::ostream& os, const Car& car)
 {
     return (os << (car.GetIsPreset() ? "preset " : "")
         << (car.GetIsVip() ? "VIP " : "")
-        << "car [" << car.GetId() << "]");
+        << "car [" << car.GetOriginId() << "(" << car.GetId() << ")" << "]");
 }

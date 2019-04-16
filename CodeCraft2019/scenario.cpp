@@ -8,22 +8,25 @@
 Scenario Scenario::Instance;
 
 Scenario::Scenario()
-{ }
-
-template <typename _TK, typename _TV>
-void ClearMapValue(std::map<_TK, _TV*> &map)
 {
-    for (auto ite = map.begin(); ite != map.end(); ++ite)
-        delete ite->second;
-    map.clear();
+    m_cars.reserve(100000);
+    m_crosses.reserve(300);
+    m_roads.reserve(400);
+}
+
+template <typename _T>
+void ClearVector(std::vector<_T*> &vector)
+{
+    for (uint i = 0; i < vector.size(); ++i)
+        delete vector[i];
+    vector.clear();
 }
 
 Scenario::~Scenario()
 {
-    m_memoryPool.Release();
-    ClearMapValue(m_cars);
-    ClearMapValue(m_crosses);
-    ClearMapValue(m_roads);
+    ClearVector(m_cars);
+    ClearVector(m_crosses);
+    ClearVector(m_roads);
 }
 
 bool HandleIntStream(std::istream& is, int argc, int* argv)
@@ -50,8 +53,9 @@ bool Scenario::HandleCar(std::istream& is)
     if (HandleIntStream(is, argc, contents))
     {
         int id = contents[0];
-        ASSERT(id >= 0 && m_cars.find(id) == m_cars.end());
-        m_cars[id] = new Car(id, contents[1], contents[2], contents[3], contents[4], contents[5] == 1, contents[6] == 1);
+        ASSERT(m_carsIndexMap.find(id) == m_carsIndexMap.end());
+        m_carsIndexMap[id] = m_cars.size();
+        m_cars.push_back(new Car(id, m_cars.size(), contents[1], contents[2], contents[3], contents[4], contents[5] == 1, contents[6] == 1));
     }
     delete[] contents;
     return true;
@@ -64,8 +68,9 @@ bool Scenario::HandleCross(std::istream& is)
     if (HandleIntStream(is, argc, contents))
     {
         int id = contents[0];
-        ASSERT(id >= 0 && m_crosses.find(id) == m_crosses.end());
-        m_crosses[id] = new Cross(id, contents[1], contents[2], contents[3], contents[4]);
+        ASSERT(m_crossesIndexMap.find(id) == m_crossesIndexMap.end());
+        m_crossesIndexMap[id] = m_crosses.size();
+        m_crosses.push_back(new Cross(id, m_crosses.size(), contents[1], contents[2], contents[3], contents[4]));
     }
     delete[] contents;
     return true;
@@ -78,9 +83,10 @@ bool Scenario::HandleRoad(std::istream& is)
     if (HandleIntStream(is, argc, contents))
     {
         int id = contents[0];
-        ASSERT(id >= 0 && m_roads.find(id) == m_roads.end());
+        ASSERT(m_roadsIndexMap.find(id) == m_roadsIndexMap.end());
+        m_roadsIndexMap[id] = m_roads.size();
         ASSERT(contents[6] == 1 || contents[6] == 0);
-        m_roads[id] = new Road(id, contents[1], contents[2], contents[3], contents[4], contents[5], contents[6] == 1);
+        m_roads.push_back(new Road(id, m_roads.size(), contents[1], contents[2], contents[3], contents[4], contents[5], contents[6] == 1));
     }
     delete[] contents;
     return true;
@@ -102,9 +108,8 @@ bool Scenario::HandleAnswer(std::istream& is)
         ASSERT_MSG(c == ',', "char=" << c << " position=" << i);
     }
     ASSERT(argv[0] >= 0 && argv[1] >= 0);
-    auto find = m_cars.find(argv[0]);
-    ASSERT(find != m_cars.end());
-    Tactics::Instance.GetRealTimes()[argv[0]] = argv[1];
+    int id = MapCarOriginToIndex(argv[0]);
+    Tactics::Instance.GetRealTimes()[id] = argv[1];
     int path;
     while (true)
     {
@@ -112,7 +117,10 @@ bool Scenario::HandleAnswer(std::istream& is)
         is >> path >> c;
         ASSERT(c == ',' || c == ')');
         ASSERT(path >= 0);
-        Tactics::Instance.GetTraces()[argv[0]].AddToTail(path);
+        auto find = m_roadsIndexMap.find(path);
+        ASSERT(find != m_roadsIndexMap.end());
+        int pathId = find->second;
+        Tactics::Instance.GetTraces()[id].AddToTail(pathId);
         if (c == ')')
             break;
     }
@@ -121,9 +129,16 @@ bool Scenario::HandleAnswer(std::istream& is)
     
 void Scenario::DoInitialize()
 {
-    ClearMapValue(m_cars);
-    ClearMapValue(m_crosses);
-    ClearMapValue(m_roads);
+    ClearVector(m_cars);
+    ClearVector(m_crosses);
+    ClearVector(m_roads);
+    m_garageSize.clear();
+    m_garageInnerIndex.clear();
+    m_carsIndexMap.clear();
+    m_crossesIndexMap.clear();
+    m_roadsIndexMap.clear();
+    m_vipCarsN = 0;
+    m_presetCarsN = 0;
     FileReader reader;
     bool result;
     LOG("read information of cars from " << Config::PathCar);
@@ -135,180 +150,139 @@ void Scenario::DoInitialize()
     LOG("read information of roads from " << Config::PathRoad);
     result = reader.Read(Config::PathRoad.c_str(), Callback::Create(&Scenario::HandleRoad, this));
     ASSERT(result);
-    LOG("read information of preset from " << Config::PathPreset);
-    result = reader.Read(Config::PathPreset.c_str(), Callback::Create(&Scenario::HandleAnswer, this));
-    ASSERT(result);
 
-    m_carIndexer = IndexerEnhanced<int>();
-    m_crossIndexer = IndexerEnhanced<int>();
-    m_roadIndexer = IndexerEnhanced<int>();
-    m_memoryPool.Release();
-    m_carArray = m_memoryPool.Manage(new MapArray<int, Car>(Scenario::CalculateIndexArraySize(Scenario::Cars()), false));
-    m_carArray->ReplaceIndexer(IndexerMirror<int>(m_carIndexer));
-    m_crossArray = m_memoryPool.Manage(new MapArray<int, Cross>(Scenario::CalculateIndexArraySize(Scenario::Crosses()), false));
-    m_crossArray->ReplaceIndexer(IndexerMirror<int>(m_crossIndexer));
-    m_roadArray = m_memoryPool.Manage(new MapArray<int, Road>(Scenario::CalculateIndexArraySize(Scenario::Roads()), false));
-    m_roadArray->ReplaceIndexer(IndexerMirror<int>(m_roadIndexer));
-    
-    int index;
-    index = 0;
-    DirectionType_Foreach(dir,
-        m_directionIndexer.Input(dir, index++);
-    );
-    index = 0;
-    for (auto ite = m_cars.begin(); ite != m_cars.end(); ++ite, ++index)
+    m_garageSize.resize(m_crosses.size(), 0);
+    m_garageInnerIndex.resize(m_cars.size(), -1);
+
+    for (uint i = 0; i < m_cars.size(); ++i)
     {
-        Car* car = ite->second;
-        ASSERT(m_crosses.find(car->GetFromCrossId()) != m_crosses.end());
-        ASSERT(m_crosses.find(car->GetToCrossId()) != m_crosses.end());
+        Car* car = m_cars[i];
+        ASSERT((int)i == car->GetId());
+        //check origin input
+        ASSERT(m_crossesIndexMap.find(car->GetFromCrossId()) != m_crossesIndexMap.end());
+        ASSERT(m_crossesIndexMap.find(car->GetToCrossId()) != m_crossesIndexMap.end());
+        //replace information to index
+        car->SetFromCrossId(m_crossesIndexMap[car->GetFromCrossId()]);
+        car->SetToCrossId(m_crossesIndexMap[car->GetToCrossId()]);
+        //set ptr
         car->SetFromCross(m_crosses[car->GetFromCrossId()]);
         car->SetToCross(m_crosses[car->GetToCrossId()]);
-        //indexer
-        if (index != 0)
-            for ( ; ite->first != index + m_carIndexer.GetDiffer(); ++index)
-                m_carArray->ReplaceDataByIndex(index, 0);
-        m_carIndexer.Input(ite->first, index);
-        m_carArray->ReplaceDataByIndex(index, car);
+        if (car->GetIsVip())
+            ++m_vipCarsN;
+        if (car->GetIsPreset())
+            ++m_presetCarsN;
+        m_garageInnerIndex[i] = m_garageSize[car->GetFromCrossId()]++;
     }
-    index = 0;
-    for (auto ite = m_crosses.begin(); ite != m_crosses.end(); ++ite, ++index)
+    for (uint i = 0; i < m_crosses.size(); ++i)
     {
-        Cross* cross = ite->second;
+        Cross* cross = m_crosses[i];
+        ASSERT((int)i == cross->GetId());
         if (cross->GetNorthRoadId() != -1)
         {
-            ASSERT(m_roads.find(cross->GetNorthRoadId()) != m_roads.end());
+            ASSERT(m_roadsIndexMap.find(cross->GetNorthRoadId()) != m_roadsIndexMap.end());
+            cross->SetNorthRoadId(m_roadsIndexMap[cross->GetNorthRoadId()]);
             cross->SetNorthRoad(m_roads[cross->GetNorthRoadId()]);
         }
         if (cross->GetEasthRoadId() != -1)
         {
-            ASSERT(m_roads.find(cross->GetEasthRoadId()) != m_roads.end());
+            ASSERT(m_roadsIndexMap.find(cross->GetEasthRoadId()) != m_roadsIndexMap.end());
+            cross->SetEasthRoadId(m_roadsIndexMap[cross->GetEasthRoadId()]);
             cross->SetEasthRoad(m_roads[cross->GetEasthRoadId()]);
         }
-        if (cross->GetSouthhRoadId() != -1)
+        if (cross->GetSouthRoadId() != -1)
         {
-            ASSERT(m_roads.find(cross->GetSouthhRoadId()) != m_roads.end());
-            cross->SetSouthRoad(m_roads[cross->GetSouthhRoadId()]);
+            ASSERT(m_roadsIndexMap.find(cross->GetSouthRoadId()) != m_roadsIndexMap.end());
+            cross->SetSouthRoadId(m_roadsIndexMap[cross->GetSouthRoadId()]);
+            cross->SetSouthRoad(m_roads[cross->GetSouthRoadId()]);
         }
         if (cross->GetWestRoadId() != -1)
         {
-            ASSERT(m_roads.find(cross->GetWestRoadId()) != m_roads.end());
+            ASSERT(m_roadsIndexMap.find(cross->GetWestRoadId()) != m_roadsIndexMap.end());
+            cross->SetWestRoadId(m_roadsIndexMap[cross->GetWestRoadId()]);
             cross->SetWestRoad(m_roads[cross->GetWestRoadId()]);
         }
-        //indexer
-        if (index != 0)
-            for ( ; ite->first != index + m_crossIndexer.GetDiffer(); ++index)
-                m_crossArray->ReplaceDataByIndex(index, 0);
-        m_crossIndexer.Input(ite->first, index);
-        m_crossArray->ReplaceDataByIndex(index, cross);
     }
-    index = 0;
-    for (auto ite = m_roads.begin(); ite != m_roads.end(); ++ite, ++index)
+    for (uint i = 0; i < m_roads.size(); ++i)
     {
-        Road* road = ite->second;
-        ASSERT(m_crosses.find(road->GetStartCrossId()) != m_crosses.end());
-        ASSERT(m_crosses.find(road->GetEndCrossId()) != m_crosses.end());
+        Road* road = m_roads[i];
+        ASSERT((int)i == road->GetId());
+        ASSERT(m_crossesIndexMap.find(road->GetStartCrossId()) != m_crossesIndexMap.end());
+        ASSERT(m_crossesIndexMap.find(road->GetEndCrossId()) != m_crossesIndexMap.end());
+        road->SetStartCrossId(m_crossesIndexMap[road->GetStartCrossId()]);
+        road->SetEndCrossId(m_crossesIndexMap[road->GetEndCrossId()]);
         road->SetStartCross(m_crosses[road->GetStartCrossId()]);
         road->SetEndCross(m_crosses[road->GetEndCrossId()]);
-        //indexer
-        if (index != 0)
-            for ( ; ite->first != index + m_roadIndexer.GetDiffer(); ++index)
-                m_roadArray->ReplaceDataByIndex(index, 0);
-        m_roadIndexer.Input(ite->first, index);
-        m_roadArray->ReplaceDataByIndex(index, road);
     }
+}
+
+void Scenario::DoMoreInitialize()
+{
+    LOG("read information of preset from " << Config::PathPreset);
+    bool result = FileReader().Read(Config::PathPreset.c_str(), Callback::Create(&Scenario::HandleAnswer, this));
+    ASSERT(result);
 }
 
 void Scenario::Initialize()
 {
-    Tactics::Instance.Initialize();
     Instance.DoInitialize();
+    Tactics::Instance.Initialize();
+    Instance.DoMoreInitialize();
 }
 
-const std::map<int, Car*>& Scenario::Cars()
+const std::vector<Car*>& Scenario::Cars()
 {
     return Instance.m_cars;
 }
 
-const std::map<int, Cross*>& Scenario::Crosses()
+const std::vector<Cross*>& Scenario::Crosses()
 {
     return Instance.m_crosses;
 }
 
-const std::map<int, Road*>& Scenario::Roads()
+const std::vector<Road*>& Scenario::Roads()
 {
     return Instance.m_roads;
 }
 
-/*
-Car* Scenario::GetCar(const int& id)
+const int& Scenario::GetGarageSize(const int& id)
 {
-    auto find = Instance.m_cars.find(id);
-    if (find == Instance.m_cars.end())
-        return 0;
+    ASSERT((int)Instance.m_garageSize.size() > id);
+    return Instance.m_garageSize[id];
+}
+
+const int& Scenario::GetGarageInnerIndex(const int& carId)
+{
+    ASSERT((int)Instance.m_garageInnerIndex.size() > carId);
+    return Instance.m_garageInnerIndex[carId];
+}
+
+const int& Scenario::MapCarOriginToIndex(const int& origin)
+{
+    auto find = Instance.m_carsIndexMap.find(origin);
+    ASSERT(find != Instance.m_carsIndexMap.end());
     return find->second;
 }
 
-Cross* Scenario::GetCross(const int& id)
+const int& Scenario::MapCrossOriginToIndex(const int& origin)
 {
-    auto find = Instance.m_crosses.find(id);
-    if (find == Instance.m_crosses.end())
-        return 0;
+    auto find = Instance.m_crossesIndexMap.find(origin);
+    ASSERT(find != Instance.m_crossesIndexMap.end());
     return find->second;
 }
 
-Road* Scenario::GetRoad(const int& id)
+const int& Scenario::MapRoadOriginToIndex(const int& origin)
 {
-    auto find = Instance.m_roads.find(id);
-    if (find == Instance.m_roads.end())
-        return 0;
+    auto find = Instance.m_roadsIndexMap.find(origin);
+    ASSERT(find != Instance.m_roadsIndexMap.end());
     return find->second;
-}
-*/
-
-Car* Scenario::GetCar(const int& id)
-{
-    return Instance.m_carArray->Find(id);
-}
-
-Cross* Scenario::GetCross(const int& id)
-{
-    return Instance.m_crossArray->Find(id);
-}
-
-Road* Scenario::GetRoad(const int& id)
-{
-    return Instance.m_roadArray->Find(id);
-}
-
-const IndexerEnhanced<int>& Scenario::GetCarIndexer()
-{
-    return Instance.m_carIndexer;
-}
-
-const IndexerEnhanced<int>& Scenario::GetCrossIndexer()
-{
-    return Instance.m_crossIndexer;
-}
-
-const IndexerEnhanced<int>& Scenario::GetRoadIndexer()
-{
-    return Instance.m_roadIndexer;
-}
-
-const IndexerEnhanced<Cross::DirectionType>& Scenario::GetDirectionIndexer()
-{
-    return Instance.m_directionIndexer;
 }
 
 const int& Scenario::GetVipCarsN()
 {
-    static int vipCarsN = -1;
-    if (vipCarsN < 0)
-    {
-        vipCarsN = 0;
-        for (auto ite = Cars().begin(); ite != Cars().end(); ++ite)
-            if (ite->second->GetIsVip())
-                ++vipCarsN;
-    }
-    return vipCarsN;
+    return Instance.m_vipCarsN;
+}
+
+const int& Scenario::GetPresetCarsN()
+{
+    return Instance.m_presetCarsN;
 }

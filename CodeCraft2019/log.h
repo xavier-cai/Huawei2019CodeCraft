@@ -96,10 +96,10 @@ public:
         {                                                   \
             std::ostream* os = Log::GetOutstream();         \
             if (os != 0)                                    \
-                (*os) << info                               \
-                          << ' ' << Log::GetName(*this)     \
-                          << "::" << __FUNCTION__ << ' '    \
-                          << msg << std::endl;              \
+                (*os) << info  << ' '                       \
+                      /*<< Log::GetName(*this) << "::"*/        \
+                      << __FUNCTION__ << ' '                \
+                      << msg << std::endl;                  \
         }                                                   \
     } while(false)
 

@@ -23,8 +23,7 @@ private:
     int m_scheduledCarsN; //counter
     int m_reachedCarsN; //counter
     bool m_conflictFlag; //for checking conflict, reset in each schedule cycle
-    typedef std::map< int, std::list<std::map<int, SimCar*>::iterator> > GarageList;
-    GarageList m_vipCarsInGarage; //cross id -> vip car(iterator) list
+    std::vector< std::vector<SimCar*> > m_vipCarsInGarage; //cross id -> vector of garage cars
 
     /* for handle callback */
     void HandleUpdateState(const SimCar::SimState& state);
@@ -40,13 +39,11 @@ private:
 
     /* internal functions */
     int GetPositionInNextRoad(const int& time, SimScenario& scenario, SimCar* car) const;
-    SimCar* PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const;
-    SimCar* CheckFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, SimRoad* road, const int& crossId) const;
+    SimCar* PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scenario, const SimRoad* road, const int& crossId) const;
     bool PassCrossOrJustForward(const int& time, SimScenario& scenario, SimCar* car);
     bool GetCarOutFromGarage(const int& time, SimScenario& scenario, SimCar* car) const;
     void GetOutFromGarage(const int& time, SimScenario& scenario) const;
     void InitializeVipCarsInGarage(const int& time, SimScenario& scenario);
-    GarageList::iterator GetVipOutFromGarage(const int& time, SimScenario& scenario, const GarageList::iterator& garageIte, const int& roadId = -1);
     void GetVipOutFromGarage(const int& time, SimScenario& scenario, const int& crossId = -1, const int& roadId = -1);
 
     /* for logging */

@@ -1,19 +1,18 @@
 #ifndef TRACE_H
 #define TRACE_H
 
-#include <list>
+#include <vector>
 
 class Trace
 {
 public:
-    typedef std::list<int> Container;
+    typedef std::vector<int> Container;
     typedef Container::iterator Node;
     typedef Container::const_iterator NodeConst;
     
 private:
     Container m_container;
-    Node m_end;
-    std::size_t m_size;
+    std::size_t m_end;
     
 public:
     Trace();
@@ -26,10 +25,15 @@ public:
     const std::size_t& Size() const;
     void RemoveFromTail();
     void AddToTail(int id);
-    void Clear(NodeConst untill);
+    void Clear(const std::size_t& untill);
     void Clear();
+
+    int& operator [] (const std::size_t& index);
+    const int& operator [] (const std::size_t& index) const;
     
 };//class Trace
+
+#include <list>
 
 template <typename _T>
 std::_List_iterator<_T> operator + (const std::_List_iterator<_T>& ite, int n)

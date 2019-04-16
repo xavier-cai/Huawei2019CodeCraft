@@ -1,7 +1,6 @@
 #include "scheduler.h"
 #include "log.h"
 #include "timer.h"
-#include "scenario.h"
 #include "assert.h"
 
 Scheduler::Scheduler()
@@ -53,22 +52,23 @@ void Scheduler::HandleResult(int& time, SimScenario& scenario, Simulator::Update
     {
         std::ostream& os = *m_traceFile;
         os << "time:" << time << "\n";
-        for (auto roadIte = scenario.Roads().begin(); roadIte != scenario.Roads().end(); ++roadIte)
+        for (uint iRoad = 0; iRoad < scenario.Roads().size(); ++iRoad)
         {
-            os << "(" << roadIte->first << ",";
+            SimRoad* road = scenario.Roads()[iRoad];
+            os << "(" << road->GetRoad()->GetOriginId() << ",";
             os << "forward,[";
-            int length = roadIte->second.GetRoad()->GetLength();
-            for (int i = 1; i <= roadIte->second.GetRoad()->GetLanes(); ++i)
+            int length = road->GetRoad()->GetLength();
+            for (int i = 1; i <= road->GetRoad()->GetLanes(); ++i)
             {
                 os << (i == 1 ? "" : ",") << "[";
-                auto& cars = roadIte->second.GetCars(i);
+                auto& cars = road->GetCars(i);
                 int index = length;
                 for (auto carIte = cars.begin(); carIte != cars.end(); ++carIte)
                 {
-                    int pos = scenario.Cars()[(*carIte)->GetId()].GetCurrentPosition();
+                    int pos = scenario.Cars()[(*carIte)->GetId()]->GetCurrentPosition();
                     for (; index > pos; --index)
                         os << (index == length ? "" : ",") << "-1";
-                    os << (index == length ? "" : ",") << (*carIte)->GetId();
+                    os << (index == length ? "" : ",") << (*carIte)->GetOriginId();
                     --index;
                 }
                 for (; index > 0; --index)
@@ -76,21 +76,21 @@ void Scheduler::HandleResult(int& time, SimScenario& scenario, Simulator::Update
                 os << "]";
             }
             os << "])";
-            if (roadIte->second.GetRoad()->GetIsTwoWay())
+            if (road->GetRoad()->GetIsTwoWay())
             {
-                os << "\n(" << roadIte->first << ",";
+                os << "\n(" << road->GetRoad()->GetId() << ",";
                 os << "backward,[";
-                for (int i = 1; i <= roadIte->second.GetRoad()->GetLanes(); ++i)
+                for (int i = 1; i <= road->GetRoad()->GetLanes(); ++i)
                 {
                     os << (i == 1 ? "" : ",") << "[";
-                    auto& cars = roadIte->second.GetCarsOpposite(i);
+                    auto& cars = road->GetCarsOpposite(i);
                     int index = length;
                     for (auto carIte = cars.begin(); carIte != cars.end(); ++carIte)
                     {
-                        int pos = scenario.Cars()[(*carIte)->GetId()].GetCurrentPosition();
+                        int pos = scenario.Cars()[(*carIte)->GetId()]->GetCurrentPosition();
                         for (; index > pos; --index)
                             os << (index == length ? "" : ",") << "-1";
-                        os << (index == length ? "" : ",") << (*carIte)->GetId();
+                        os << (index == length ? "" : ",") << (*carIte)->GetOriginId();
                         --index;
                     }
                     for (; index > 0; --index)

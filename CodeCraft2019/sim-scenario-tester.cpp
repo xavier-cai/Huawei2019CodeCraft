@@ -1,12 +1,11 @@
 #include "sim-scenario-tester.h"
 #include "random.h"
-#include "scenario.h"
 #include "log.h"
 #include "assert.h"
 #include <set>
 #include "simulator.h"
 
-#define PEEK_CAR (&m_simCars[carIndex++])
+#define PEEK_CAR (m_simCars[carIndex++])
 
 double SimScenariotTester::GeneProb(0.7);
 double SimScenariotTester::BlockProb(0.2);
@@ -25,7 +24,7 @@ SimScenariotTester::SimScenariotTester()
         {
             bool valid = true;
             DirectionType_Foreach(dir, 
-                if (ite->second->GetRoad(dir) == 0 || !ite->second->GetRoad(dir)->GetIsTwoWay())
+                if ((*ite)->GetRoad(dir) == 0 || !(*ite)->GetRoad(dir)->GetIsTwoWay())
                 {
                     valid = false;
                     break;
@@ -33,7 +32,7 @@ SimScenariotTester::SimScenariotTester()
             );
             if (valid && Random::Uniform() < 0.2)
             {
-                cross = ite->second;
+                cross = *ite;
                 break;
             }
         }
@@ -42,12 +41,12 @@ SimScenariotTester::SimScenariotTester()
     std::map<int, SimRoad*> roads;
     std::vector<int> roadRng;
     DirectionType_Foreach(dir,
-        SimRoad* road = &m_simRoads[cross->GetRoad(dir)->GetId()];
+        SimRoad* road = m_simRoads[cross->GetRoad(dir)->GetId()];
         roads[road->GetRoad()->GetId()] = road;
         roadRng.push_back(road->GetRoad()->GetId());
         road->GetRoad()->SetLength(Random::Uniform(8, 21));
         road->GetRoad()->SetLimit(Random::Uniform(2, 9));
-        LOG("road " << road->GetRoad()->GetId()
+        LOG("road " << road->GetRoad()->GetOriginId()
             << " lanes " << road->GetRoad()->GetLanes()
             << " length " << road->GetRoad()->GetLength()
             << " limit " << road->GetRoad()->GetLimit());
@@ -81,8 +80,8 @@ SimScenariotTester::SimScenariotTester()
                     car->GetCar()->SetMaxSpeed(Random::Uniform(1, 9));
                     car->UpdateOnRoad(1, road->GetRoad(), i, !road->IsFromOrTo(cross->GetId()), road->GetRoad()->GetLength() - pos);
                     road->RunIn(car->GetCar(), i, road->IsFromOrTo(cross->GetId()));
-                    LOG("generate passing cross car [" << car->GetCar()->GetId() << "]"
-                        << " next " << (nextId == roadId ? -1 : nextId)
+                    LOG("generate passing cross " << *car->GetCar()
+                        << " next " << "(" << (nextId == roadId ? -1 : nextId) << ")"
                         << " dir " << (nextId == roadId ? Cross::DIRECT : cross->GetTurnDirection(roadId, nextId))
                         << " speed " << car->GetCar()->GetMaxSpeed()
                         );
@@ -104,7 +103,7 @@ SimScenariotTester::SimScenariotTester()
                     car->UpdateOnRoad((waiting ? 1 : 2), road->GetRoad(), i, road->IsFromOrTo(cross->GetId()), pos);
                     if (waiting) car->SetIsIgnored(true);
                     road->RunIn(car->GetCar(), i, !road->IsFromOrTo(cross->GetId()));
-                    LOG("generate " << (waiting ? "waiting" : "scheduled") << " block cross car [" << car->GetCar()->GetId() << "]");
+                    LOG("generate " << (waiting ? "waiting" : "scheduled") << " block cross car [" << car->GetCar()->GetOriginId() << "]");
                 }
             }
         }

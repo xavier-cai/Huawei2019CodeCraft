@@ -2,22 +2,22 @@
 #define TACTICS_H
 
 #include "trace.h"
-#include <map>
+#include <vector>
 
 class Tactics
 {
 private:
     Tactics();
 
-    std::map<int, Trace> m_traces;
-    std::map<int, int> m_realTimes;
+    std::vector<Trace> m_traces;
+    std::vector<int> m_realTimes;
 
 public:
     static Tactics Instance; //singlton
 
     void Initialize();
-    std::map<int, Trace>& GetTraces();
-    std::map<int, int>& GetRealTimes();
+    std::vector<Trace>& GetTraces();
+    std::vector<int>& GetRealTimes();
 
 };//class Tactic
 

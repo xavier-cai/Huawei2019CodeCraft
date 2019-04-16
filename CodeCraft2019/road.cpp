@@ -8,13 +8,18 @@ Road::Road()
     ASSERT(false);
 }
 
-Road::Road(const int& id, const int& length, const int& limit, const int& lanes, const int& startCrossId, const int& endCrossId, const bool& isTwoWay)
-    : m_id(id), m_length(length), m_limit(limit), m_lanes(lanes), m_startCrossId(startCrossId), m_endCrossId(endCrossId), m_isTwoWay(isTwoWay)
+Road::Road(const int& origin, const int& id, const int& length, const int& limit, const int& lanes, const int& startCrossId, const int& endCrossId, const bool& isTwoWay)
+    : m_originId(origin), m_id(id), m_length(length), m_limit(limit), m_lanes(lanes), m_startCrossId(startCrossId), m_endCrossId(endCrossId), m_isTwoWay(isTwoWay)
     , m_startCross(0), m_endCross(0)
 { }
 
 Road::~Road()
 { }
+
+const int& Road::GetOriginId() const
+{
+    return m_originId;
+}
 
 const int& Road::GetId() const
 {
@@ -59,6 +64,16 @@ void Road::SetLimit(const int& limit)
 void Road::SetLength(const int& length)
 {
     m_length = length;
+}
+
+void Road::SetStartCrossId(const int& id)
+{
+    m_startCrossId = id;
+}
+
+void Road::SetEndCrossId(const int& id)
+{
+    m_endCrossId = id;
 }
 
 void Road::SetStartCross(Cross* cross)
