@@ -13,6 +13,7 @@
 !/config*/cross.txt
 !/config*/road.txt
 !/config*/presetAnswer.txt
+!/config*/relation.txt
 # special files in checking directories
 !/config*-check*/判题结果.txt
 !/config*-check*/answer.txt
