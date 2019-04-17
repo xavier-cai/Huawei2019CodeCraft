@@ -1,10 +1,9 @@
 #ifndef CALLBACK_H
 #define CALLBACK_H
 
-class NullBase
-{ };
+class NullClass { };
 
-template <typename _T, typename _B = NullBase>
+template <typename _T, typename _B = NullClass>
 class RefCount : public _B
 {
 private:
@@ -37,7 +36,6 @@ private:
 
 public:
 
-#define COMMA ,
 #define CALLBACK_DEFINE(id, TypenameList, TypeList, ArgumentsIn, ArgumentsOut) \
     template <typename _R, TypenameList> \
     class Invoker##id : public RefCount< Invoker##id <_R, TypeList> > \
@@ -162,11 +160,12 @@ public:
         return Handle##id <_R, TypeList>(instance); \
     }
 
+#define COMMA ,
 CALLBACK_DEFINE(1, typename _A, _A, _A a, a)
 CALLBACK_DEFINE(2, typename _A1 COMMA typename _A2, _A1 COMMA _A2, _A1 a1 COMMA _A2 a2, a1 COMMA a2)
 CALLBACK_DEFINE(3, typename _A1 COMMA typename _A2 COMMA typename _A3, _A1 COMMA _A2 COMMA _A3, _A1 a1 COMMA _A2 a2 COMMA _A3 a3, a1 COMMA a2 COMMA a3)
-
 #undef COMMA
+
 #undef CALLBACK_DEFINE
 
 };//class Callback

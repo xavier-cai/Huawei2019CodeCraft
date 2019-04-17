@@ -7,11 +7,14 @@
 
 Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0);
 Callback::Handle2<void, const SimCar*, Road*> SimCar::m_updateGoOnNewRoad(0);
+Callback::Handle1<void, const SimCar*> SimCar::m_updateCarScheduled(0);
 
-void SimCar::NotifyUpdateState(const SimCar::SimState& state)
+void SimCar::NotifyUpdateState(const SimCar::SimState& state) const
 {
-    if(!m_updateStateNotifier.IsNull())
+    if (!m_updateStateNotifier.IsNull())
         m_updateStateNotifier.Invoke(state);
+    if (!m_updateCarScheduled.IsNull() && state == SCHEDULED)
+        m_updateCarScheduled.Invoke(this);
 }
 
 SimCar::SimCar()
@@ -339,12 +342,17 @@ void SimCar::SetUpdateStateNotifier(const Callback::Handle1<void, const SimState
     m_updateStateNotifier = notifier;
 }
 
-void SimCar::SetUpdateGoOnNewRoad(const Callback::Handle2<void, const SimCar*, Road*>& notifier)
+void SimCar::SetUpdateGoOnNewRoadNotifier(const Callback::Handle2<void, const SimCar*, Road*>& notifier)
 {
     m_updateGoOnNewRoad = notifier;
 }
 
-int SimCar::CalculateTime(bool useCache)
+void SimCar::SetUpdateCarScheduledNotifier(const Callback::Handle1<void, const SimCar*>& notifier)
+{
+    m_updateCarScheduled = notifier;
+}
+
+int SimCar::CalculateArriveTime(bool useCache)
 {
     if (!useCache || m_calculateTimeCache < 0)
     {

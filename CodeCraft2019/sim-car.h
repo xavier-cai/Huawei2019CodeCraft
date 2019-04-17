@@ -50,10 +50,10 @@ private:
     void SetSimState(int time, SimState state);
     /* invoked when state changed by above function */
     static Callback::Handle1<void, const SimState&> m_updateStateNotifier;
-    //static void (*m_updateStateNotifier)(const SimState&);
-    static void NotifyUpdateState(const SimState& state);
+    void NotifyUpdateState(const SimState& state) const;
     /* notify load changed */
     static Callback::Handle2<void, const SimCar*, Road*> m_updateGoOnNewRoad;
+    static Callback::Handle1<void, const SimCar*> m_updateCarScheduled;
     
 public:
     SimCar();
@@ -99,10 +99,13 @@ public:
     void UpdateReachGoal(int time);
     void UpdateStayInGarage(int time);
 
+    //[CAUTION : this callback is used by simulator]
     static void SetUpdateStateNotifier(const Callback::Handle1<void, const SimState&>& notifier);
-    static void SetUpdateGoOnNewRoad(const Callback::Handle2<void, const SimCar*, Road*>& notifier);
+    /* callbacks below can be used in scheduler */
+    static void SetUpdateGoOnNewRoadNotifier(const Callback::Handle2<void, const SimCar*, Road*>& notifier);
+    static void SetUpdateCarScheduledNotifier(const Callback::Handle1<void, const SimCar*>& notifier);
 
-    int CalculateTime(bool useCache);
+    int CalculateArriveTime(bool useCache);
     
 };//class SimCar
 

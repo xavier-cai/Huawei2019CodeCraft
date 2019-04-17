@@ -104,7 +104,7 @@ void SchedulerFloyd::SetIsVipCarDispatchFree(bool v)
 
 bool CompareVipCars(SimCar* a, SimCar* b)
 {
-    return a->CalculateTime(true) > b->CalculateTime(true);
+    return a->CalculateArriveTime(true) > b->CalculateArriveTime(true);
 }
 
 void SchedulerFloyd::HandlePresetCars(SimScenario& scenario)
@@ -121,7 +121,7 @@ void SchedulerFloyd::HandlePresetCars(SimScenario& scenario)
     }
     std::sort(presetVipCars.begin(), presetVipCars.end(), CompareVipCars);
     int canChangesN = Scenario::GetPresetCarsN() * 0.1;
-    for (uint i = 0; i < canChangesN; ++i)
+    for (int i = 0; i < canChangesN; ++i)
     {
         presetVipCars[i]->SetIsForceOutput(true);
     }
@@ -146,7 +146,7 @@ void SchedulerFloyd::CalculateWeight(SimScenario& scenario)
         if (car != 0 && car->GetCar()->GetIsVip() && (car->GetCar()->GetIsPreset() && !car->GetIsForceOutput()))
         {
             int realTime = car->GetRealTime();
-            int arriveTime = realTime + car->CalculateTime(true);
+            int arriveTime = realTime + car->CalculateArriveTime(true);
             if (m_lastPresetVipCarRealTime < 0 || realTime > m_lastPresetVipCarRealTime)
                 m_lastPresetVipCarRealTime = realTime;
             if (m_lastPresetVipCarEstimateArriveTime < 0 || arriveTime > m_lastPresetVipCarEstimateArriveTime)
@@ -196,7 +196,7 @@ void SchedulerFloyd::DoInitialize(SimScenario& scenario)
 
     m_deadLockSolver.Initialize(0, scenario);
     m_deadLockSolver.SetSelectedRoadCallback(Callback::Create(&SchedulerFloyd::SelectBestRoad, this));
-    SimCar::SetUpdateGoOnNewRoad(Callback::Create(&SchedulerFloyd::HandleGoOnNewRoad, this));
+    SimCar::SetUpdateGoOnNewRoadNotifier(Callback::Create(&SchedulerFloyd::HandleGoOnNewRoad, this));
 }
 
 void SchedulerFloyd::HandleGoOnNewRoad(const SimCar* car, Road* oldRoad)
