@@ -373,6 +373,7 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
         GetOutFromGarage(time, scenario);
     }
     //ASSERT(result.Conflict || scheduledCarsN - reachedCarsN == scenario.GetOnRoadCarsN());
+    LOG("@ " << time << " Cars in garage : "<< scenario.GetCarInGarageN() << ", Cars on road : " << scenario.GetOnRoadCarsN() << ", Cars reached goal : " << scenario.GetReachCarsN());
     return result;
 }
 

@@ -110,16 +110,12 @@ Cross* Road::GetPeerCross(const Cross* peer) const
 
 bool Road::CanStartFrom(const int& crossId) const
 {
-    bool isStart = crossId == m_startCrossId;
-    ASSERT(isStart || crossId == m_endCrossId);
-    return isStart || m_isTwoWay;
+    return crossId == m_startCrossId || (m_isTwoWay && crossId == m_endCrossId);
 }
 
 bool Road::CanReachTo(const int& crossId) const
 {
-    bool isEnd = crossId == m_endCrossId;
-    ASSERT(isEnd || crossId == m_startCrossId);
-    return isEnd || m_isTwoWay;
+    return crossId == m_endCrossId || (m_isTwoWay && crossId == m_startCrossId);
 }
 
 bool Road::IsFromOrTo(const int& crossId) const

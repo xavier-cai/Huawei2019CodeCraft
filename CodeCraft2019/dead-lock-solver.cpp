@@ -6,15 +6,14 @@
 #include <algorithm>
 
 DeadLockSolver::DeadLockSolver()
-    :  m_backupScenario(0), m_backupTime(-1), m_deadLockTime(-1), m_firstLockOnTime(-1), m_deadLockTraceIndexes(0), m_depth(0), m_actived(true), m_subSolver(0)
+    : m_deadLockTime(-1), m_firstLockOnTime(-1), m_deadLockTraceIndexes(0), m_depth(0), m_actived(true), m_subSolver(0)
 { }
 
 void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
 {
     if (m_depth == 0)
     {
-        m_backupScenario = m_memoryPool.Manage(new SimScenario(scenario));
-        m_backupTime = time;
+        Backup(time, scenario);
     }
 
     int size = Scenario::Cars().size();
@@ -22,6 +21,57 @@ void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
     for(int i = 0; i < size; ++i)
     {
         m_deadLockTraceIndexes[i] = 0;
+    }
+}
+
+
+void DeadLockSolver::OperationDelay(const int& time, SimScenario& scenario, std::list<SimCar*>& deadLockCars)
+{
+    std::list<SimCar*> newCars;
+    for (auto ite = deadLockCars.begin(); ite != deadLockCars.end(); ++ite)
+    {
+        SimCar* car = *ite;
+        SimCar* waitingCar = car->GetWaitingCar(time);
+        ASSERT(waitingCar != 0);
+        if (car->GetCurrentCross() != waitingCar->GetCurrentCross())
+        {
+            SimRoad* road = scenario.Roads()[waitingCar->GetCurrentRoad()->GetId()];
+            for (int i = 1; i <= road->GetRoad()->GetLanes(); ++i)
+            {
+                auto& list = road->GetCars(i, !waitingCar->GetCurrentDirection());
+                for (auto iteList = list.begin(); iteList != list.end(); ++iteList)
+                {
+                    SimCar* thisCar = scenario.Cars()[(*iteList)->GetId()];
+                    if (!thisCar->GetCar()->GetIsPreset()
+                        && thisCar->GetCurrentTraceIndex() == 1 && !thisCar->GetIsLockOnNextRoad()
+                        && !thisCar->GetCar()->GetIsVip()
+                        //&& thisCar.GetCar()->GetMaxSpeed() <= 4
+                        )
+                        newCars.push_back(thisCar);
+                }
+            }
+        }
+    }
+
+    double operationFactor = 0.5;
+    int operationNum = std::max(1, int(newCars.size() * operationFactor));
+    if (newCars.size() > 0)
+    {
+        int counter = 0;
+        int operationCounter = 0;
+        double interval = newCars.size() * 1.0 / operationNum;
+        for (auto ite = newCars.begin(); ite != newCars.end(); ++ite, ++counter)
+        {
+            if (counter > (operationCounter * interval))
+            {
+                int delay = Random::Uniform(0, 5);
+                SimCar* car = *ite;
+                car->SetRealTime(time + delay);
+                m_deadLockTraceIndexes[car->GetCar()->GetId()] = 0;
+                LOG("reset real time of car [" << car->GetCar()->GetId() << " to " << car->GetRealTime());
+                ++operationCounter;
+            }
+        }
     }
 }
 
@@ -45,9 +95,12 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
         m_deadLockTime = time;
         return m_subSolver->DoHandleDeadLock(time, scenario);
     }
-    else if (time > m_deadLockTime) //another new dead lock
-        m_deadLockMemory.clear(); //reset
-    m_deadLockTime = time;
+    else
+    {
+        if (time > m_deadLockTime) //another new dead lock
+            m_deadLockMemory.clear(); //reset
+        m_deadLockTime = time;
+    }
 
     //remember the trace
     for(uint i = 0; i < scenario.Cars().size(); ++i)
@@ -59,7 +112,10 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
 
     std::list<SimCar*> cars;
     Simulator::Instance.GetDeadLockCars(time, scenario, cars);
-    double operatorFactor = 0.2;
+
+    OperationDelay(time, scenario, cars);
+
+    double operatorFactor = 0.5;
     int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
     int operatorCounterMax = operatorCounter;
     while (operatorCounter > 0)
@@ -73,7 +129,7 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
                 return false;
             }
             LOG("uncomplete dead lock");
-            return true;
+            break;
         }
         for (auto ite = cars.begin(); ite != cars.end(); )
         {
@@ -93,7 +149,7 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
                 int to = car->GetCar()->GetToCrossId();
                 auto& carTrace = car->GetTrace();
                 auto& memory = m_deadLockMemory[car->GetCar()->GetId()];
-                std::list<int> selections;
+                std::vector<int> selections;
                 for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
                 {
                     Road* road = Scenario::Crosses()[from]->GetRoad((Cross::DirectionType)i);
@@ -183,9 +239,19 @@ bool DeadLockSolver::HandleDeadLock(int& time, SimScenario& scenario)
     if (DoHandleDeadLock(time, scenario))
     {
         //retry
-        time = m_backupTime;
-        scenario = *m_backupScenario;
-        return true;
+        ASSERT(m_backups.size() > 0);
+        ASSERT(m_backups.begin()->first == 0);
+        ASSERT(m_firstLockOnTime >= 0);
+        for (auto ite = --m_backups.end(); ; --ite)
+        {
+            if (ite->first <= m_firstLockOnTime)
+            {
+                time = ite->first;
+                scenario = *(ite->second);
+                return true;
+            }
+        }
+        ASSERT(false);
     }
     return false;
 }
@@ -210,7 +276,7 @@ bool DeadLockSolver::IsGarageLockedInBackup(const int& time) const
     return m_subSolver->IsGarageLockedInBackup(time);
 }
 
-void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::list<int>&, SimCar*>& cb)
+void DeadLockSolver::SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::vector<int>&, SimCar*>& cb)
 {
     m_selectedRoadCallback = cb;
     if (m_subSolver != 0)
@@ -235,4 +301,9 @@ bool DeadLockSolver::NeedUpdate(const int& time) const
     }
     ASSERT(m_subSolver != 0);
     return m_subSolver->NeedUpdate(time);
+}
+
+void DeadLockSolver::Backup(const int& time, const SimScenario& scenario)
+{
+    m_backups[time] = m_memoryPool.Manage(new SimScenario(scenario));
 }
