@@ -78,7 +78,7 @@ void Scheduler::HandleResult(int& time, SimScenario& scenario, Simulator::Update
             os << "])";
             if (road->GetRoad()->GetIsTwoWay())
             {
-                os << "\n(" << road->GetRoad()->GetId() << ",";
+                os << "\n(" << road->GetRoad()->GetOriginId() << ",";
                 os << "backward,[";
                 for (int i = 1; i <= road->GetRoad()->GetLanes(); ++i)
                 {
