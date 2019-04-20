@@ -152,6 +152,11 @@ void SimCar::SetSimState(int time, SimState state)
     NotifyUpdateState(state);
 }
 
+int SimCar::GetLastUpdateTime() const
+{
+    return m_lastUpdateTime;
+}
+
 SimCar::SimState SimCar::GetSimState(int time)
 {
     if (m_lastUpdateTime < 0) //inside the garage

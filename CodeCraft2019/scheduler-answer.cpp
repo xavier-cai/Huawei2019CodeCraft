@@ -36,9 +36,14 @@ bool SchedulerAnswer::HandleAnswer(std::istream& is)
 
     ASSERT(car != 0);
     if (car->GetCar()->GetIsPreset())
+    {
+        car->SetIsForceOutput(true);
         car->GetTrace().Clear();
+    }
     else
+    {
         car->SetRealTime(argv[1]);
+    }
     int path;
     while (true)
     {

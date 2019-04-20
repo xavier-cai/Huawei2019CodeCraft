@@ -10,4 +10,6 @@
         } \
     } while(false)
 
+#define Inf 0x3fffffff
+
 #endif

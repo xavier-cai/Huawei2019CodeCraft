@@ -1,14 +1,13 @@
-#ifndef SCHEDULER_FLOYD_H
-#define SCHEDULER_FLOYD_H
-
+#ifndef SCHEDULER_DIJI_H
+#define SCHEDULER_DIJI_H
 #include "scheduler.h"
 #include <list>
 #include "dead-lock-solver.h"
 
-class SchedulerFloyd : public Scheduler
+class SchedulerDijkstra : public Scheduler
 {
 public:
-    SchedulerFloyd();
+    SchedulerDijkstra();
 
     void SetLengthWeight(double v);
     void SetCarNumWeight(double v);
@@ -24,9 +23,8 @@ public:
     void SetIsLessCarAfterDeadLock(bool v);
     void SetIsDropBackByDijkstra(bool v);
     void SetIsVipCarDispatchFree(bool v);
-    void SetVipCarOptimalStartTime(int v);
+    //wsq
     void HandleSimCarScheduled(const SimCar* car);
-
 protected:
     virtual void DoInitialize(SimScenario& scenario) override;
     virtual void DoUpdate(int& time, SimScenario& scenario) override;
@@ -37,18 +35,19 @@ protected:
 
 private:
     /* algorithm floyde */
-    std::vector< std::vector<double> > m_weightCrossToCross;
-    std::vector< std::vector<int> > m_connectionCrossToCross;
-    std::vector< std::vector< std::vector<int> > > m_minPathCrossToCross;
+    std::vector< std::vector<double> > weightCrossToCross;
+    std::vector< std::vector<double> > lengthMapInDoUpdate;
+    std::vector< std::vector<int> > connectionCrossToCross;
+    std::vector< std::vector<int> > minPathCrossToCross;
+    std::vector< std::vector< std::vector<int> > > minPathCrossToCrossDijkstra;
 
     /* appointment */
-    std::vector< std::pair<int, int> > m_appointOnRoadCounter;
-    
+    std::vector< std::pair<int, int> > appointOnRoadCounter;
+
     /* for dispatching cars */
-    std::set<int> m_notArrivedProtectedCars;
-    //std::vector< std::pair<int, int> > aver;
-    std::vector< std::pair<int, int> > m_garageMinSpeed;
-    std::vector<int> m_garagePlanCarNum;
+    std::set<int> m_notArrivedPresetCars;
+    std::vector<int> garageMinSpeed;
+    std::vector<int> garagePlanCarNum;
 
     /* for solving dead lock */
     DeadLockSolver m_deadLockSolver;
@@ -58,8 +57,8 @@ private:
     /* private interfaces */
     void CalculateWeight(SimScenario& scenario);
     void RefreshNotArrivedPresetCars(SimScenario& scenario);
-    bool UpdateCarTraceByDijkstra(const int& time, const SimScenario& scenario, SimCar* car) const;
-    bool UpdateCarTraceByDijkstra(const int& time, const SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const;
+    void UpdateCarTraceByDijkstraForDoUpdate(const int& time, const SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car);
+    bool UpdateCarTraceByDijkstraForSelectBestRoad(const int& time, const SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const;
 
     int m_updateInterval;
 
@@ -75,7 +74,6 @@ private:
     double m_presetVipTracePreloadWeight;
     int m_lastPresetVipCarRealTime;
     int m_lastPresetVipCarEstimateArriveTime;
-    int m_vipCarOptimalStartTime;
 
     /* switchers */
     bool m_isEnableVipWeight;
@@ -89,6 +87,7 @@ private:
     /* temporary variables */
     double m_roadCapacityAverage;
     int m_carsNumOnRoadLimit;
+    //wsq
 
 };//class SchedulerFloyd
 

@@ -46,10 +46,6 @@ private:
     void InitializeVipCarsInGarage(const int& time, SimScenario& scenario);
     void GetVipOutFromGarage(const int& time, SimScenario& scenario, const int& crossId = -1, const int& roadId = -1);
 
-    /* for logging */
-    void PrintCrossState(const int& time, SimScenario& scenario, Cross* cross) const;
-    void PrintDeadLock(const int& time, SimScenario& scenario) const;
-
     /* cheater */
     bool m_isEnableCheater;
 
@@ -63,6 +59,10 @@ public:
 
     /* static functions */
     static void SetEnableCheater(const bool& enable);
+
+    /* for logging */
+    void PrintCrossState(const int& time, SimScenario& scenario, Cross* cross) const;
+    void PrintDeadLock(const int& time, SimScenario& scenario) const;
 
 };//class Simulator
 

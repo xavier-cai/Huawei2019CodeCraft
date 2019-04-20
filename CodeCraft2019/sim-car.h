@@ -79,6 +79,7 @@ public:
     const bool& GetIsForceOutput() const;
     
     int GetNextRoadId() const; //-1 means reaching end cross
+    int GetLastUpdateTime() const;
     SimState GetSimState(int time);
     SimCar* GetWaitingCar(int time);
     

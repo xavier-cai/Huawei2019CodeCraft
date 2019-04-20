@@ -113,7 +113,7 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
     std::list<SimCar*> cars;
     Simulator::Instance.GetDeadLockCars(time, scenario, cars);
 
-    OperationDelay(time, scenario, cars);
+    //OperationDelay(time, scenario, cars);
 
     double operatorFactor = 0.5;
     int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
@@ -228,7 +228,9 @@ bool DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
         if (car != 0)
             if (!car->GetIsInGarage() && !car->GetIsReachedGoal())
                 if (m_firstLockOnTime < 0 || car->GetLockOnNextRoadTime() < m_firstLockOnTime)
+                { 
                     m_firstLockOnTime = car->GetLockOnNextRoadTime();
+                }
     }
     ASSERT(m_firstLockOnTime >= 0);
     return true;
