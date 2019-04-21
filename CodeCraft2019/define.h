@@ -10,6 +10,8 @@
         } \
     } while(false)
 
+#define ID(o) (o).GetOriginId() << "(" << (o).GetId() << ")"
+
 #define Inf 0x3fffffff
 
 #endif

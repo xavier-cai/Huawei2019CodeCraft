@@ -101,11 +101,15 @@ SimCar* Simulator::PeekFirstPriorityCarOnRoad(const int& time, SimScenario& scen
                 if (ret == 0 || ((car->GetCurrentPosition() > position && car->GetCar()->GetIsVip() == isVip) ||
                     (car->GetCar()->GetIsVip() && !isVip))) //vip power
                 {
+                    if (ret != 0)
+                        ret->UpdateWaiting(time, car);
                     ret = car;
                     position = car->GetCurrentPosition();
                     ASSERT(isVip == car->GetCar()->GetIsVip() || !isVip);
                     isVip = car->GetCar()->GetIsVip();
                 }
+                else
+                    car->UpdateWaiting(time, ret);
             }
         }
     }
@@ -553,13 +557,13 @@ void Simulator::GetDeadLockCars(const int& time, SimScenario& scenario, std::lis
             if (id >= 0)
             {
                 SimRoad* road = scenario.Roads()[id];
-                if (road->GetRoad()->GetEndCrossId() == crossId ||
-                    (road->GetRoad()->GetStartCrossId() == crossId && road->GetRoad()->GetIsTwoWay()))
+                if (road->GetRoad()->CanReachTo(crossId))
                 {
                     SimCar* firstPriority = PeekFirstPriorityCarOnRoad(time, scenario, road, crossId);
                     if (firstPriority != 0 && firstPriority->GetSimState(time) != SimCar::SCHEDULED)
                     {
                         ASSERT(firstPriority->GetSimState(time) == SimCar::WAITING);
+                        ASSERT(firstPriority->GetIsLockOnNextRoad());
                         //if (firstPriority->GetWaitingCar(time)->GetCurrentCross()->GetId() != crossId)
                         {
                             result.push_back(firstPriority);
