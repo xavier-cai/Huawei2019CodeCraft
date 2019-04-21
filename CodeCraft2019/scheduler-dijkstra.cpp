@@ -1,4 +1,4 @@
-#include "scheduler-diji.h"
+#include "scheduler-dijkstra.h"
 #include "scenario.h"
 #include "assert.h"
 #include "log.h"

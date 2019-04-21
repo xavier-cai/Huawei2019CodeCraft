@@ -15,7 +15,6 @@ public:
     void SetLanesNumWeight(double v);
     void SetCarLimit(double v);
     void SetPresetVipTracePreloadWeight(double v);
-    void SetLastPresetVipCarRealTime(int v);
     void SetLastPresetVipCarEstimateArriveTime(int v);
     void SetIsEnableVipWeight(bool v);
     void SetIsOptimalForLastVipCar(bool v);
@@ -48,6 +47,7 @@ private:
     std::set<int> m_notArrivedProtectedCars;
     //std::vector< std::pair<int, int> > aver;
     std::vector< std::pair<int, int> > m_garageMinSpeed;
+    std::vector< std::pair<int, int> > m_garageTraceSizeLimit;
     std::vector<int> m_garagePlanCarNum;
 
     /* for solving dead lock */
@@ -73,9 +73,10 @@ private:
     double m_carLimitLooser;
     double m_carLimitTighter;
     double m_presetVipTracePreloadWeight;
-    int m_lastPresetVipCarRealTime;
+    int m_lastVipCarRealTime;
     int m_lastPresetVipCarEstimateArriveTime;
     int m_vipCarOptimalStartTime;
+    int m_vipCarTraceProtectedStartTime;
 
     /* switchers */
     bool m_isEnableVipWeight;

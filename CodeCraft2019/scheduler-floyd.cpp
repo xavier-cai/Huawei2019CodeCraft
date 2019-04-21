@@ -12,6 +12,7 @@
 
 SchedulerFloyd::SchedulerFloyd()
     : m_updateInterval(2)
+    , m_lastVipCarRealTime(0)
     , m_carsNumOnRoadLimit(-1)
 { 
     SetLengthWeight(0.1);
@@ -19,7 +20,6 @@ SchedulerFloyd::SchedulerFloyd()
     SetLanesNumWeight(0.2);
     SetCarLimit(2.1);
     SetPresetVipTracePreloadWeight(1.0);
-    SetLastPresetVipCarRealTime(0);
     SetLastPresetVipCarEstimateArriveTime(0);
     SetIsEnableVipWeight(false);
     SetIsOptimalForLastVipCar(true);
@@ -59,14 +59,11 @@ void SchedulerFloyd::SetPresetVipTracePreloadWeight(double v)
     m_presetVipTracePreloadWeight = v;
 }
 
-void SchedulerFloyd::SetLastPresetVipCarRealTime(int v)
-{
-    m_lastPresetVipCarRealTime = v;
-}
 void SchedulerFloyd::SetVipCarOptimalStartTime(int v)
 {
     m_vipCarOptimalStartTime = v;
 }
+
 void SchedulerFloyd::SetLastPresetVipCarEstimateArriveTime(int v)
 {
     m_lastPresetVipCarEstimateArriveTime = v;
@@ -151,25 +148,44 @@ void SchedulerFloyd::CalculateWeight(SimScenario& scenario)
     m_roadCapacityAverage = lengthTotal / roadCount;
     SetCarLimit(m_roadCapacityAverage / 10.0);
     m_carsNumOnRoadLimit = roadCount * m_roadCapacityAverage;
-    m_lastPresetVipCarRealTime = -1;
+    m_lastVipCarRealTime = -1;
     m_lastPresetVipCarEstimateArriveTime = -1;
     int vipCarNumInPreset = 0;
+    int vipStartTime = 0;
+    int vipPresetArriveSpendTime = 0;
     for (uint i = 0; i < scenario.Cars().size(); ++i)
     {
         SimCar* car = scenario.Cars()[i];
-        if (car != 0 && car->GetCar()->GetIsVip() && car->GetCar()->GetIsPreset())
+        if (car != 0)
         {
-            vipCarNumInPreset++;
-            int realTime = car->GetRealTime();
-            int arriveTime = realTime + car->CalculateArriveTime(true);
-            if (m_lastPresetVipCarRealTime < 0 || realTime > m_lastPresetVipCarRealTime)
-                m_lastPresetVipCarRealTime = realTime;
-            if (m_lastPresetVipCarEstimateArriveTime < 0 || arriveTime > m_lastPresetVipCarEstimateArriveTime)
-                m_lastPresetVipCarEstimateArriveTime = arriveTime;
+            if (car->GetCar()->GetIsVip())
+            {
+                int realTime = car->GetRealTime();
+                if (m_lastVipCarRealTime < 0 || realTime > m_lastVipCarRealTime)
+                    m_lastVipCarRealTime = realTime;
+                if (car->GetCar()->GetIsPreset())
+                {
+                    vipCarNumInPreset++;
+                    int arriveTime = realTime + car->CalculateArriveTime(true);
+                    if (m_lastPresetVipCarEstimateArriveTime < 0 || arriveTime > m_lastPresetVipCarEstimateArriveTime)
+                        m_lastPresetVipCarEstimateArriveTime = arriveTime;
+                    vipPresetArriveSpendTime += car->CalculateArriveTime(true);
+                }
+                vipStartTime += car->GetRealTime();
+            }
         }
     }
+    if (Scenario::GetVipCarsN() > 0)
+    {
+        vipStartTime /= Scenario::GetVipCarsN();
+        vipPresetArriveSpendTime /= vipCarNumInPreset;
+        int vipProtectedTimeSpan = Scenario::GetVipCarsN() * vipPresetArriveSpendTime / 50 / (m_lastVipCarRealTime - vipStartTime);
+        vipProtectedTimeSpan = std::min(100, std::max(40, vipProtectedTimeSpan));
+        m_vipCarTraceProtectedStartTime = std::max(0, m_lastVipCarRealTime - vipProtectedTimeSpan);
+    }
+
     int vipCarOptimalTime = Scenario::GetVipCarsN() / m_lastPresetVipCarEstimateArriveTime;
-    m_vipCarOptimalStartTime = m_lastPresetVipCarEstimateArriveTime - std::max(vipCarOptimalTime * 10, std::max(100, vipCarNumInPreset / 10));
+    m_vipCarOptimalStartTime = m_lastPresetVipCarEstimateArriveTime - std::max(vipCarOptimalTime * 10, std::max(80, vipCarNumInPreset / 10));
     LOG(" VipCarNum = " << Scenario::GetVipCarsN() <<
         " lastPresetVipCarEstimateArriveTime = " << m_lastPresetVipCarEstimateArriveTime <<
         " vipCarOptimalTime = " << vipCarOptimalTime <<
@@ -227,6 +243,7 @@ void SchedulerFloyd::DoInitialize(SimScenario& scenario)
     m_minPathCrossToCross.resize(crossCount);
     m_appointOnRoadCounter.resize(roadCount, std::make_pair(0, 0));
     m_garageMinSpeed.resize(crossCount, std::make_pair(-1, -1));
+    m_garageTraceSizeLimit.resize(crossCount, std::make_pair(-1, -1));
     m_garagePlanCarNum.resize(crossCount, 0);
     for (uint i = 0; i < crossCount; i++)
     {
@@ -270,6 +287,7 @@ void SchedulerFloyd::HandleGoOnNewRoad(const SimCar* car, Road* oldRoad)
 }
 void SchedulerFloyd::DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car)
 {
+    return;
     if (car->GetCurrentCross()->GetId() != car->GetCar()->GetToCrossId() && !car->GetIsLockOnNextRoad())
     {
         int nextRoadId = car->GetNextRoadId();
@@ -282,7 +300,32 @@ void SchedulerFloyd::DoHandleBecomeFirstPriority(const int& time, SimScenario& s
         }
         carAver = carAver / (double)roadLink->GetRoad()->GetLanes();
         if (carAver >= (double)roadLink->GetRoad()->GetLength() - 3.0)
-            UpdateCarTraceByDijkstra(time, scenario, car);
+        {
+            std::vector<int> validFirstHop;
+            Cross* cross = car->GetCurrentCross();
+            for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
+            {
+                Road* road = cross->GetRoad((Cross::DirectionType)i);
+                if (road != 0 && road != car->GetCurrentRoad() && road != roadLink->GetRoad() && road->CanStartFrom(cross->GetId()))
+                {
+                    SimRoad* roadLink = scenario.Roads()[road->GetId()];
+                    int roadLines = roadLink->GetRoad()->GetLanes();
+                    double carAverCal = 0;
+                    for (int j = 1; j <= roadLines; j++)
+                    {
+                        carAverCal += (double)roadLink->GetCarsFrom(j, car->GetCurrentCross()->GetId()).size();
+                    }
+                    carAverCal = carAverCal / (double)roadLink->GetRoad()->GetLanes();
+                    if (carAverCal < (double)roadLink->GetRoad()->GetLength() - 3.0)
+                    {
+                        validFirstHop.push_back(road->GetId());
+                    }
+                }
+                
+            }
+            if (validFirstHop.size() > 0)
+                UpdateCarTraceByDijkstra(time, scenario, validFirstHop, car);
+        }
     }
     
 }
@@ -573,6 +616,36 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
         //ASSERT(frontCross->GetId() == car->GetCar()->GetToCrossId());
 #endif
     }
+    for (uint iCross = 0; iCross < crossSize; ++iCross)
+    {
+        int maxCarTraceSizeInGarage = -1;
+        int maxVipCarTraceSizeInGarage = -1;
+        auto& garage = scenario.Garages()[iCross];
+        for (uint iCar = 0; iCar < garage.size(); ++iCar)
+        {
+            if (garage[iCar] != 0 && garage[iCar]->GetIsInGarage() && !garage[iCar]->GetCar()->GetIsPreset())
+            {
+                if (garage[iCar]->GetRealTime() > time )
+                    continue;
+                if (garage[iCar]->GetCar()->GetMaxSpeed() <= m_garageMinSpeed[iCross].first)
+                {
+                    if (maxCarTraceSizeInGarage < garage[iCar]->GetTrace().Size() || maxCarTraceSizeInGarage < 0)
+                    {
+                        maxCarTraceSizeInGarage = garage[iCar]->GetTrace().Size();
+                        m_garageTraceSizeLimit[iCross].first = maxCarTraceSizeInGarage;
+                    }
+                }
+                if (garage[iCar]->GetCar()->GetIsVip() && garage[iCar]->GetCar()->GetMaxSpeed() <= m_garageMinSpeed[iCross].second)
+                {
+                    if (maxVipCarTraceSizeInGarage < garage[iCar]->GetTrace().Size() || maxVipCarTraceSizeInGarage < 0)
+                    {
+                        maxCarTraceSizeInGarage = garage[iCar]->GetTrace().Size();
+                        m_garageTraceSizeLimit[iCross].second = maxCarTraceSizeInGarage;
+                    }
+                }
+            }
+        }
+        }
 }
 
 
@@ -586,15 +659,19 @@ void SchedulerFloyd::DoHandleGetoutGarage(const int& time, SimScenario& scenario
     if (m_isLimitedByRoadSizeCount)
     {
         ASSERT(m_carsNumOnRoadLimit > 0);
-        currentLimit = carOnRoad >= m_carsNumOnRoadLimit ? m_carLimitTighter : m_carLimitLooser * 2.0;
+        currentLimit = carOnRoad >= m_carsNumOnRoadLimit ? 0 : m_carLimitLooser * 2.0;
+        if (car->GetCar()->GetIsVip())
+        {
+            currentLimit = m_carLimitLooser;
+        }
     }
 
     if (m_isFasterAtEndStep)
     {
         ASSERT(m_carsNumOnRoadLimit > 0);
-        if (m_notArrivedProtectedCars.size() == 0 && m_lastPresetVipCarRealTime != -1 && carOnRoad <= m_carsNumOnRoadLimit)
+        if (m_notArrivedProtectedCars.size() == 0 && m_lastVipCarRealTime != -1 && carOnRoad <= m_carsNumOnRoadLimit)
         {
-            currentLimit = m_carLimitLooser * 2.0;
+            currentLimit = m_carLimitLooser * 4.0;
         }
     }
 
@@ -608,35 +685,20 @@ void SchedulerFloyd::DoHandleGetoutGarage(const int& time, SimScenario& scenario
 
     if (m_isOptimalForLastVipCar)
     {
-        if (m_lastPresetVipCarRealTime != -1 && (time >= m_vipCarOptimalStartTime && m_notArrivedProtectedCars.size() != 0))
+        if (m_lastVipCarRealTime != -1 && (time >= m_vipCarTraceProtectedStartTime && m_notArrivedProtectedCars.size() != 0))
         {             
             if (!car->GetCar()->GetIsVip())
-            {    /*
-                if (carOnRoad <= m_carsNumOnRoadLimit * 0.25)
-                {
-                    currentLimit = m_carLimit;
-                }
-                */
+            {   
                 if (!car->GetCar()->GetIsPreset())
                 {
                     car->SetRealTime(time + 1);
                     return;
-                }
-            }
-            
+                }             
+            }     
             else
             {
-                if (carOnRoad >= m_carsNumOnRoadLimit * 1.0)
                 {
-                    if (!car->GetCar()->GetIsPreset())
-                    {
-                        car->SetRealTime(time + 1);
-                        return;
-                    }
-                }
-                else
-                {
-                    currentLimit = m_carLimitLooser * 2.0;
+                    currentLimit = m_carLimitLooser;
                 }
             }           
         }
@@ -655,8 +717,10 @@ void SchedulerFloyd::DoHandleGetoutGarage(const int& time, SimScenario& scenario
     if (!m_isVipCarDispatchFree)
     {
         if ((carAver > currentLimit)
-            || ((!car->GetCar()->GetIsVip() && car->GetCar()->GetMaxSpeed() > m_garageMinSpeed[crossId].first)))
-            //|| ((car->GetCar()->GetIsVip() && car->GetCar()->GetMaxSpeed() > m_garageMinSpeed[crossId].second)))
+            || ((!car->GetCar()->GetIsVip() && car->GetCar()->GetMaxSpeed() > m_garageMinSpeed[crossId].first))
+            || ((car->GetCar()->GetIsVip() && car->GetCar()->GetMaxSpeed() > m_garageMinSpeed[crossId].second))
+            || ((!car->GetCar()->GetIsVip() && (double)car->GetTrace().Size() < (double)m_garageTraceSizeLimit[crossId].first * 0.9))
+            || ((car->GetCar()->GetIsVip() && (double)car->GetTrace().Size() < (double)m_garageTraceSizeLimit[crossId].second * 0.9)))
         {
             if(!car->GetCar()->GetIsPreset())
                 car->SetRealTime(time + 1);
@@ -817,7 +881,7 @@ bool SchedulerFloyd::UpdateCarTraceByDijkstra(const int& time, const SimScenario
                         }
                         carAver = carAver / roadLink->GetRoad()->GetLanes();
                         int roadLength = cross->GetRoad((Cross::DirectionType)i)->GetLength();
-                        lengthMap[cross->GetId()][peerlink->GetId()] = ((double)roadLength) * m_lengthWeight + (double)carAver * (double)carAver * (double)carAver / (double)roadLength;//m_carNumWeight;
+                        lengthMap[cross->GetId()][peerlink->GetId()] = ((double)roadLength) * m_lengthWeight / 2.0 + (double)carAver * (double)carAver * (double)carAver / (double)roadLength;//m_carNumWeight;
                     }
                 }
             }
