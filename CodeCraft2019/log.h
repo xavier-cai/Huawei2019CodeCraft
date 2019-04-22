@@ -1,6 +1,8 @@
 #ifndef LOG_H
 #define LOG_H
 
+#define LOG_ON
+
 #if defined(__linux__)
 	#include <cxxabi.h>
 #else
@@ -103,6 +105,10 @@ public:
         }                                                   \
     } while(false)
 
+#ifdef LOG_ON
 #define LOG(msg) LOG_IMPL("", msg)
+#else
+#define LOG(...)
+#endif
 
 #endif

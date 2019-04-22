@@ -188,7 +188,7 @@ bool Simulator::PassCrossOrJustForward(const int& time, SimScenario& scenario, S
     }
 
     SimRoad* nextRoad = scenario.Roads()[nextRoadId];
-    bool isFromOrTo = nextRoad->IsFromOrTo(cross->GetId());
+    bool isFromOrTo = nextRoad->GetRoad()->IsFromOrTo(cross->GetId());
     int nextPosition = GetPositionInNextRoad(time, scenario, car);
     if (nextPosition <= 0) //just forward
     {
@@ -419,7 +419,7 @@ bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimC
         int roadId = car->GetNextRoadId();
         ASSERT(roadId >= 0);
         SimRoad* road = scenario.Roads()[roadId];
-        bool isFromOrTo = road->IsFromOrTo(car->GetCar()->GetFromCrossId());
+        bool isFromOrTo = road->GetRoad()->IsFromOrTo(car->GetCar()->GetFromCrossId());
         car->UpdateOnRoad(time, road->GetRoad(), canGoout.first, isFromOrTo, canGoout.second);
         road->RunIn(car->GetCar(), canGoout.first, !isFromOrTo);
     }

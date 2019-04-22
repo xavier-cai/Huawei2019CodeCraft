@@ -114,21 +114,6 @@ const int& SimScenario::GetVipTotalCompleteTime() const
     return m_vipTotalCompleteTime;
 }
 
-const std::vector< std::vector<SimCar*> >& SimScenario::Garages() const
-{
-    return m_simGarages;
-}
-
-const std::vector<SimRoad*>& SimScenario::Roads() const
-{
-    return m_simRoads;
-}
-
-const std::vector<SimCar*>& SimScenario::Cars() const
-{
-    return m_simCars;
-}
-
 void SimScenario::NotifyCarGetoutOnRoad(const int& time, const SimCar* car)
 {
     ASSERT(m_carInGarageN > 0);
@@ -183,21 +168,6 @@ void SimScenario::SaveToFile(const char* file) const
 bool SimScenario::IsComplete() const
 {
     return m_carInGarageN == 0 && m_carOnRoadN == 0;
-}
-
-const unsigned int& SimScenario::GetCarInGarageN() const
-{
-    return m_carInGarageN;
-}
-
-const unsigned int& SimScenario::GetReachCarsN() const
-{
-    return m_reachCarsN;
-}
-
-int SimScenario::GetOnRoadCarsN() const
-{
-    return m_carOnRoadN;
 }
 
 SimCar* SimScenario::AddCar(Car* car)

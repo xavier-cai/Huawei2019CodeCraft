@@ -1,5 +1,7 @@
 #include "sim-road.h"
 #include "assert.h"
+#include "sim-scenario.h"
+#include <algorithm>
 
 SimRoad::SimRoad()
 {
@@ -20,73 +22,6 @@ void SimRoad::Reset()
 {
     for (int i = 0; i < m_carSize; ++i)
         m_cars[i].clear();
-}
-
-Road* SimRoad::GetRoad() const
-{
-    return m_road;
-}
-
-const std::vector<Car*>& SimRoad::GetCarsImpl(const int& lane) const
-{
-    ASSERT(lane > 0 && lane <= m_road->GetLanes());
-    ASSERT(lane <= m_carSize);
-    return m_cars[lane - 1];
-}
-
-const std::vector<Car*>& SimRoad::GetCarsOppositeImpl(const int& lane) const
-{
-    ASSERT(lane > 0 && lane <= m_road->GetLanes());
-    ASSERT(m_road->GetLanes() + lane <= m_carSize);
-    return m_cars[m_road->GetLanes() + lane - 1];
-}
-
-const std::vector<Car*>& SimRoad::GetCarsImpl(const int& lane, bool opposite) const
-{
-    return opposite ? GetCarsOppositeImpl(lane) : GetCarsImpl(lane);
-}
-
-std::vector<Car*>& SimRoad::GetCarsImpl(const int& lane, bool opposite)
-{
-    if (opposite)
-    {
-        ASSERT(lane > 0 && lane <= m_road->GetLanes());
-        ASSERT(m_road->GetLanes() + lane <= m_carSize);
-        return m_cars[m_road->GetLanes() + lane - 1];
-    }
-    ASSERT(lane > 0 && lane <= m_road->GetLanes());
-    ASSERT(lane <= m_carSize);
-    return m_cars[lane - 1];
-}
-
-const std::vector<Car*>& SimRoad::GetCars(const int& lane) const
-{
-    return GetCarsImpl(lane);
-}
-
-const std::vector<Car*>& SimRoad::GetCarsOpposite(const int& lane) const
-{
-    return GetCarsOppositeImpl(lane);
-}
-
-const std::vector<Car*>& SimRoad::GetCars(const int& lane, bool opposite) const
-{
-    return opposite ? GetCarsOppositeImpl(lane) : GetCarsImpl(lane);
-}
-
-const std::vector<Car*>& SimRoad::GetCarsTo(const int& lane, const int& crossId) const
-{
-    return GetCars(lane, IsFromOrTo(crossId));
-}
-
-const std::vector<Car*>& SimRoad::GetCarsFrom(const int& lane, const int& crossId) const
-{
-    return GetCars(lane, !IsFromOrTo(crossId));
-}
-
-bool SimRoad::IsFromOrTo(const int& crossId) const
-{
-    return m_road->IsFromOrTo(crossId);
 }
 
 void SimRoad::RunIn(Car* car, const int& lane, const bool& opposite)

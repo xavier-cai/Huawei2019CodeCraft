@@ -78,8 +78,8 @@ SimScenariotTester::SimScenariotTester()
                         car->GetCar()->SetToCross(cross);
                     }
                     car->GetCar()->SetMaxSpeed(Random::Uniform(1, 9));
-                    car->UpdateOnRoad(1, road->GetRoad(), i, !road->IsFromOrTo(cross->GetId()), road->GetRoad()->GetLength() - pos);
-                    road->RunIn(car->GetCar(), i, road->IsFromOrTo(cross->GetId()));
+                    car->UpdateOnRoad(1, road->GetRoad(), i, !road->GetRoad()->IsFromOrTo(cross->GetId()), road->GetRoad()->GetLength() - pos);
+                    road->RunIn(car->GetCar(), i, road->GetRoad()->IsFromOrTo(cross->GetId()));
                     LOG("generate passing cross " << *car->GetCar()
                         << " next " << "(" << (nextId == roadId ? -1 : nextId) << ")"
                         << " dir " << (nextId == roadId ? Cross::DIRECT : cross->GetTurnDirection(roadId, nextId))
@@ -100,9 +100,9 @@ SimScenariotTester::SimScenariotTester()
                     car->GetCar()->SetToCross(road->GetRoad()->GetPeerCross(cross));
                     car->GetTrace().AddToTail(roadId);
                     bool waiting = Random::Uniform() < WaitingProb;
-                    car->UpdateOnRoad((waiting ? 1 : 2), road->GetRoad(), i, road->IsFromOrTo(cross->GetId()), pos);
+                    car->UpdateOnRoad((waiting ? 1 : 2), road->GetRoad(), i, road->GetRoad()->IsFromOrTo(cross->GetId()), pos);
                     if (waiting) car->SetIsIgnored(true);
-                    road->RunIn(car->GetCar(), i, !road->IsFromOrTo(cross->GetId()));
+                    road->RunIn(car->GetCar(), i, !road->GetRoad()->IsFromOrTo(cross->GetId()));
                     LOG("generate " << (waiting ? "waiting" : "scheduled") << " block cross car [" << car->GetCar()->GetOriginId() << "]");
                 }
             }

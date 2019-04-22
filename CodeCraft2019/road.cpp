@@ -1,7 +1,5 @@
 #include "road.h"
-#include "car.h"
 #include "cross.h"
-#include "assert.h"
 
 Road::Road()
 {
@@ -15,46 +13,6 @@ Road::Road(const int& origin, const int& id, const int& length, const int& limit
 
 Road::~Road()
 { }
-
-const int& Road::GetOriginId() const
-{
-    return m_originId;
-}
-
-const int& Road::GetId() const
-{
-    return m_id;
-}
-
-const int& Road::GetLength() const
-{
-    return m_length;
-}
-
-const int& Road::GetLimit() const
-{
-    return m_limit;
-}
-
-const int& Road::GetLanes() const
-{
-    return m_lanes;
-}
-
-const int& Road::GetStartCrossId() const
-{
-    return m_startCrossId;
-}
-
-const int& Road::GetEndCrossId() const
-{
-    return m_endCrossId;
-}
-
-const bool& Road::GetIsTwoWay() const
-{
-    return m_isTwoWay;
-}
 
 void Road::SetLimit(const int& limit)
 {
@@ -86,41 +44,4 @@ void Road::SetEndCross(Cross* cross)
 {
     ASSERT(cross->GetId() == m_endCrossId);
     m_endCross = cross;
-}
-
-Cross* Road::GetStartCross() const
-{
-    ASSERT(m_startCross != 0);
-    return m_startCross;
-}
-
-Cross* Road::GetEndCross() const
-{
-    ASSERT(m_endCross != 0);
-    return m_endCross;
-}
-
-Cross* Road::GetPeerCross(const Cross* peer) const
-{
-    ASSERT(peer != 0);
-    bool opposite = m_endCross == peer;
-    ASSERT(opposite || m_startCross == peer);
-    return opposite ? m_startCross : m_endCross;
-}
-
-bool Road::CanStartFrom(const int& crossId) const
-{
-    return crossId == m_startCrossId || (m_isTwoWay && crossId == m_endCrossId);
-}
-
-bool Road::CanReachTo(const int& crossId) const
-{
-    return crossId == m_endCrossId || (m_isTwoWay && crossId == m_startCrossId);
-}
-
-bool Road::IsFromOrTo(const int& crossId) const
-{
-    bool ret = m_startCrossId == crossId;
-    ASSERT(ret || m_endCrossId == crossId);
-    return ret;
 }

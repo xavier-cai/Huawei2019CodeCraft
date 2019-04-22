@@ -17,12 +17,12 @@ public:
     { }
     //const int& Ref() const { return ++const_cast<RefCount*>(this)->m_counter; }
     //const int& UnRef() const { return --const_cast<RefCount*>(this)->m_counter; }
-    const int& Ref()
+    inline const int& Ref()
     {
         return ++m_counter;
     }
 
-    const int& UnRef()
+    inline const int& UnRef()
     {
         return --m_counter;
     }
@@ -51,14 +51,14 @@ public:
     private: \
         Invoker##id <_R, TypeList>* m_invoker; \
         \
-        void ReleaseInvoker () \
+        inline void ReleaseInvoker () \
         { \
             if (m_invoker != 0 && m_invoker->UnRef() <= 0) \
                 delete m_invoker; \
             m_invoker = 0; \
         } \
         \
-        void PeekInvoker () \
+        inline void PeekInvoker () \
         { \
             if (m_invoker != 0) \
                 m_invoker->Ref(); \
@@ -89,12 +89,12 @@ public:
             ReleaseInvoker(); \
         } \
         \
-        bool IsNull () const \
+        inline bool IsNull () const \
         { \
             return m_invoker == 0; \
         } \
         \
-        _R Invoke (ArgumentsIn) const \
+        inline _R Invoke (ArgumentsIn) const \
         { \
             return m_invoker->Invoke(ArgumentsOut); \
         } \

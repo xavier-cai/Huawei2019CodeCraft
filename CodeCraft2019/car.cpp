@@ -1,6 +1,6 @@
 #include "car.h"
-#include "cross.h"
 #include "assert.h"
+#include "cross.h"
 
 Car::Car()
 {
@@ -15,46 +15,6 @@ Car::Car(const int& origin, const int& id, const int& fromCrossId, const int& to
 
 Car::~Car()
 { }
-
-const int& Car::GetOriginId() const
-{
-    return m_originId;
-}
-
-const int& Car::GetId() const
-{
-    return m_id;
-}
-
-const int& Car::GetFromCrossId() const
-{
-    return m_fromCrossId;
-}
-
-const int& Car::GetToCrossId() const
-{
-    return m_toCrossId;
-}
-
-const int& Car::GetMaxSpeed() const
-{
-    return m_maxSpeed;
-}
-
-const int& Car::GetPlanTime() const
-{
-    return m_planTime;
-}
-
-const bool& Car::GetIsVip() const
-{
-    return m_isVip;
-}
-
-const bool& Car::GetIsPreset() const
-{
-    return m_isPreset;
-}
 
 void Car::SetFromCrossId(const int& id)
 {
@@ -81,23 +41,4 @@ void Car::SetToCross(Cross* cross)
 {
     ASSERT(cross->GetId() == m_toCrossId);
     m_toCross = cross;
-}
-
-Cross* Car::GetFromCross() const
-{
-    ASSERT(m_fromCross != 0);
-    return m_fromCross;
-}
-
-Cross* Car::GetToCross() const
-{
-    ASSERT(m_toCross != 0);
-    return m_toCross;
-}
-
-std::ostream& operator << (std::ostream& os, const Car& car)
-{
-    return (os << (car.GetIsPreset() ? "preset " : "")
-        << (car.GetIsVip() ? "VIP " : "")
-        << "car [" << car.GetOriginId() << "(" << car.GetId() << ")" << "]");
 }

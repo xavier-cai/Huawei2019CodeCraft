@@ -12,6 +12,7 @@
 
 #define ID(o) (o).GetOriginId() << "(" << (o).GetId() << ")"
 
-#define Inf 0x3fffffff
+static const int InfValue(0x3fffffff);
+#define Inf InfValue
 
 #endif

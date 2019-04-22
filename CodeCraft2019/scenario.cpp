@@ -229,21 +229,6 @@ void Scenario::Initialize()
     Instance.DoMoreInitialize();
 }
 
-const std::vector<Car*>& Scenario::Cars()
-{
-    return Instance.m_cars;
-}
-
-const std::vector<Cross*>& Scenario::Crosses()
-{
-    return Instance.m_crosses;
-}
-
-const std::vector<Road*>& Scenario::Roads()
-{
-    return Instance.m_roads;
-}
-
 const int& Scenario::GetGarageSize(const int& id)
 {
     ASSERT((int)Instance.m_garageSize.size() > id);
@@ -275,14 +260,4 @@ const int& Scenario::MapRoadOriginToIndex(const int& origin)
     auto find = Instance.m_roadsIndexMap.find(origin);
     ASSERT(find != Instance.m_roadsIndexMap.end());
     return find->second;
-}
-
-const int& Scenario::GetVipCarsN()
-{
-    return Instance.m_vipCarsN;
-}
-
-const int& Scenario::GetPresetCarsN()
-{
-    return Instance.m_presetCarsN;
 }

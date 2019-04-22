@@ -1,6 +1,6 @@
 #include "cross.h"
-#include "road.h"
 #include "assert.h"
+#include "road.h"
 
 Cross::Cross()
 {
@@ -19,49 +19,6 @@ Cross::Cross(const int& origin, const int& id, const int& northRoadId, const int
 
 Cross::~Cross()
 { }
-
-const int& Cross::GetOriginId() const
-{
-    return m_originId;
-}
-
-const int& Cross::GetId() const
-{
-    return m_id;
-}
-
-const int& Cross::GetNorthRoadId() const
-{
-    return m_northRoadId;
-}
-
-const int& Cross::GetEasthRoadId() const
-{
-    return m_eastRoadId;
-}
-
-const int& Cross::GetSouthRoadId() const
-{
-    return m_southRoadId;
-}
-
-const int& Cross::GetWestRoadId() const
-{
-    return m_westRoadId;
-}
-
-int Cross::GetRoadId(const DirectionType& dir) const
-{
-    switch(dir)
-    {
-        case NORTH: return m_northRoadId;
-        case EAST: return m_eastRoadId;
-        case SOUTH: return m_southRoadId;
-        case WEST: return m_westRoadId;
-    }
-    ASSERT(false);
-    return -1;
-}
 
 const Cross::DirectionType& Cross::GetDirection(const int& id) const
 {
@@ -164,63 +121,4 @@ void Cross::SetWestRoad(Road* road)
 {
     ASSERT(road->GetId() == m_westRoadId);
     m_west = road;
-}
-
-Road* Cross::GetNorthRoad() const
-{
-    return m_north;
-}
-
-Road* Cross::GetEasthRoad() const
-{
-    return m_east;
-}
-
-Road* Cross::GetSouthRoad() const
-{
-    return m_south;
-}
-
-Road* Cross::GetWestRoad() const
-{
-    return m_west;
-}
-
-Road* Cross::GetRoad(const Cross::DirectionType& dir) const
-{
-    switch(dir)
-    {
-        case NORTH: return m_north;
-        case EAST: return m_east;
-        case SOUTH: return m_south;
-        case WEST: return m_west;
-    }
-    ASSERT(false);
-    return 0;
-}
-
-Cross::TurnType operator ! (const Cross::TurnType& t)
-{
-    switch (t)
-    {
-    case Cross::LEFT: return Cross::RIGHT;
-    case Cross::DIRECT: return Cross::DIRECT;
-    case Cross::RIGHT: return Cross::LEFT;
-    default:
-        break;
-    }
-    ASSERT(false);
-    return Cross::DIRECT;
-}
-
-std::ostream& operator << (std::ostream& os, const Cross::TurnType& turn)
-{
-    switch (turn)
-    {
-    case Cross::LEFT: os << "Left"; break;
-    case Cross::DIRECT: os << "Direct"; break;
-    case Cross::RIGHT: os << "Right"; break;
-    default: ASSERT(false); break;
-    }
-    return os;
 }

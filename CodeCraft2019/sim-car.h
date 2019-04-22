@@ -50,7 +50,6 @@ private:
     void SetSimState(int time, SimState state);
     /* invoked when state changed by above function */
     static Callback::Handle1<void, const SimState&> m_updateStateNotifier;
-    void NotifyUpdateState(const SimState& state) const;
     /* notify load changed */
     static Callback::Handle2<void, const SimCar*, Road*> m_updateGoOnNewRoad;
     static Callback::Handle1<void, const SimCar*> m_updateCarScheduled;
@@ -64,34 +63,32 @@ public:
     void SetIsIgnored(const bool& ignored);
     void SetIsForceOutput(const bool& forceOutput);
 
-    Car* GetCar() const;
-    void SetRealTime(int realTime);
-    int GetRealTime() const;
-    Trace& GetTrace();
-    const Trace& GetTrace() const;
-    const bool& GetIsReachedGoal() const;
-    const bool& GetIsInGarage() const;
-    void LockOnNextRoad(const int& time);
-    const bool& GetIsLockOnNextRoad() const;
-    const int& GetLockOnNextRoadTime() const;
-    const bool& GetIsIgnored() const;
-    const int& GetStartTime() const;
-    const bool& GetIsForceOutput() const;
+    inline Car* GetCar() const;
+    inline void SetRealTime(int realTime);
+    inline int GetRealTime() const;
+    inline Trace& GetTrace();
+    inline const Trace& GetTrace() const;
+    inline const bool& GetIsReachedGoal() const;
+    inline const bool& GetIsInGarage() const;
+    inline void LockOnNextRoad(const int& time);
+    inline const bool& GetIsLockOnNextRoad() const;
+    inline const int& GetLockOnNextRoadTime() const;
+    inline const bool& GetIsIgnored() const;
+    inline const int& GetStartTime() const;
+    inline const bool& GetIsForceOutput() const;
     
-    int GetNextRoadId() const; //-1 means reaching end cross
-    int GetLastUpdateTime() const;
-    SimState GetSimState(int time);
-    SimCar* GetWaitingCar(int time);
+    inline int GetNextRoadId() const; //-1 means reaching end cross
+    inline int GetLastUpdateTime() const;
+    inline SimState GetSimState(int time);
+    inline SimCar* GetWaitingCar(int time);
     
-    const int& GetCurrentTraceIndex() const;
-    //Trace::Node GetCurrentTraceNode(); //iterator of the next road ID
-    //Trace::NodeConst GetCurrentTraceNode() const;
-    Road* GetCurrentRoad() const;
-    int GetCurrentLane() const;
-    bool GetCurrentDirection() const;
-    int GetCurrentPosition() const;
-    Cross* GetCurrentCross() const;
-    Cross::TurnType GetCurrentTurnType() const;
+    inline const int& GetCurrentTraceIndex() const;
+    inline Road* GetCurrentRoad() const;
+    inline int GetCurrentLane() const;
+    inline bool GetCurrentDirection() const;
+    inline int GetCurrentPosition() const;
+    inline Cross* GetCurrentCross() const;
+    inline Cross::TurnType GetCurrentTurnType() const;
     
     /* functions for updating state */
     void UpdateOnRoad(int time, Road* road, int lane, bool direction, int position); //go on the new road
@@ -109,5 +106,171 @@ public:
     int CalculateArriveTime(bool useCache);
     
 };//class SimCar
+
+
+
+
+
+/* 
+ * [inline functions]
+ *   it's not good to write code here, but we really need inline!
+ */
+
+inline Car* SimCar::GetCar() const
+{
+    return m_car;
+}
+
+inline void SimCar::SetRealTime(int realTime)
+{
+    ASSERT(!m_car->GetIsPreset());
+    ASSERT(realTime >= m_car->GetPlanTime());
+    *m_realTime = realTime;
+}
+
+inline int SimCar::GetRealTime() const
+{
+    return *m_realTime;
+}
+
+inline Trace& SimCar::GetTrace()
+{
+    return *m_trace;
+}
+
+inline const Trace& SimCar::GetTrace() const
+{
+    return *m_trace;
+}
+
+inline const bool& SimCar::GetIsReachedGoal() const
+{
+    return m_isReachGoal;
+}
+
+inline const bool& SimCar::GetIsInGarage() const
+{
+    return m_isInGarage;
+}
+
+inline void SimCar::LockOnNextRoad(const int& time)
+{
+    m_isLockOnNextRoad = true;
+    m_lockOnNextRoadTime = time;
+}
+
+inline const bool& SimCar::GetIsLockOnNextRoad() const
+{
+    return m_isLockOnNextRoad;
+}
+
+inline const int& SimCar::GetLockOnNextRoadTime() const
+{
+    return m_lockOnNextRoadTime >= 0 ? m_lockOnNextRoadTime : m_startTime;
+}
+
+inline const bool& SimCar::GetIsIgnored() const
+{
+    return m_isIgnored;
+}
+
+inline const int& SimCar::GetStartTime() const
+{
+    return m_startTime;
+}
+
+inline const bool& SimCar::GetIsForceOutput() const
+{
+    return m_isForceOutput;
+}
+
+inline int SimCar::GetNextRoadId() const
+{
+    return (*m_trace)[m_currentTraceIndex];
+}
+
+inline void SimCar::SetSimState(int time, SimState state)
+{
+    m_lastUpdateTime = time;
+    m_simState = state;
+    m_waitingCar = 0;
+    
+    //notify state changed
+    if (!m_updateStateNotifier.IsNull())
+        m_updateStateNotifier.Invoke(state);
+    if (!m_updateCarScheduled.IsNull() && state == SCHEDULED)
+        m_updateCarScheduled.Invoke(this);
+}
+
+inline int SimCar::GetLastUpdateTime() const
+{
+    return m_lastUpdateTime;
+}
+
+inline SimCar::SimState SimCar::GetSimState(int time)
+{
+    if (m_lastUpdateTime < 0) //inside the garage
+        return UNSCHEDULED;
+    if (time != m_lastUpdateTime)
+    {
+        ASSERT_MSG(m_simState == SCHEDULED, "the car must be scheduled in last time chip");
+        SetSimState(time, UNSCHEDULED);
+    }
+    return m_simState;
+}
+
+inline SimCar* SimCar::GetWaitingCar(int time)
+{
+    ASSERT(GetSimState(time) == WAITING);
+    ASSERT(m_waitingCar != 0);
+    return m_waitingCar;
+}
+
+inline const int& SimCar::GetCurrentTraceIndex() const
+{
+    return m_currentTraceIndex;
+}
+
+inline Road* SimCar::GetCurrentRoad() const
+{
+    return m_currentRoad;
+}
+
+inline int SimCar::GetCurrentLane() const
+{
+    ASSERT(m_currentRoad != 0);
+    return m_currentLane;
+}
+
+inline bool SimCar::GetCurrentDirection() const
+{
+    ASSERT(m_currentRoad != 0);
+    return m_currentDirection;
+}
+
+inline int SimCar::GetCurrentPosition() const
+{
+    ASSERT(m_currentRoad != 0);
+    return m_currentPosition;
+}
+
+inline Cross* SimCar::GetCurrentCross() const
+{
+    //ASSERT(m_currentRoad != 0);
+    if (m_currentRoad == 0) //still in garage
+    {
+        ASSERT(m_isInGarage);
+        return m_car->GetFromCross();
+    }
+    return m_currentDirection ? m_currentRoad->GetEndCross() : m_currentRoad->GetStartCross();
+}
+
+inline Cross::TurnType SimCar::GetCurrentTurnType() const
+{
+    int nextRoadId = GetNextRoadId();
+    ASSERT(nextRoadId >= 0 || GetCurrentCross() == m_car->GetToCross());
+    ASSERT(m_currentRoad != 0);
+    return nextRoadId < 0 ? Cross::DIRECT : GetCurrentCross()->GetTurnDirection(m_currentRoad->GetId(), nextRoadId);
+}
 
 #endif

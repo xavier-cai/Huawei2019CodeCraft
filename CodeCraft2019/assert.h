@@ -23,7 +23,7 @@
     }                                                 \
   while (false)
 #else
-#define ASSERT_MSG(condition, message) condition
+#define ASSERT_MSG(...)
 #endif
 
 #define ASSERT(condition) ASSERT_MSG(condition, "")

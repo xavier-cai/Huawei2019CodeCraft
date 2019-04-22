@@ -42,17 +42,52 @@ public:
     ~Scenario();
     
     static void Initialize();
-    static const std::vector<Car*>& Cars();
-    static const std::vector<Cross*>& Crosses();
-    static const std::vector<Road*>& Roads();
+    inline static const std::vector<Car*>& Cars();
+    inline static const std::vector<Cross*>& Crosses();
+    inline static const std::vector<Road*>& Roads();
+    inline static const int& GetVipCarsN();
+    inline static const int& GetPresetCarsN();
+
     static const int& GetGarageSize(const int& id);
     static const int& GetGarageInnerIndex(const int& carId);
     static const int& MapCarOriginToIndex(const int& origin);
     static const int& MapCrossOriginToIndex(const int& origin);
     static const int& MapRoadOriginToIndex(const int& origin);
-    static const int& GetVipCarsN();
-    static const int& GetPresetCarsN();
     
 };//class Scenario
+
+
+
+
+
+/* 
+ * [inline functions]
+ *   it's not good to write code here, but we really need inline!
+ */
+
+inline const std::vector<Car*>& Scenario::Cars()
+{
+    return Instance.m_cars;
+}
+
+inline const std::vector<Cross*>& Scenario::Crosses()
+{
+    return Instance.m_crosses;
+}
+
+inline const std::vector<Road*>& Scenario::Roads()
+{
+    return Instance.m_roads;
+}
+
+inline const int& Scenario::GetVipCarsN()
+{
+    return Instance.m_vipCarsN;
+}
+
+inline const int& Scenario::GetPresetCarsN()
+{
+    return Instance.m_presetCarsN;
+}
 
 #endif

@@ -20,31 +20,6 @@ Trace& Trace::operator = (const Trace& o)
     return *this;
 }
 
-Trace::Node Trace::Head()
-{
-    return m_container.begin();
-}
-
-Trace::Node Trace::Tail()
-{
-    return m_container.begin() + m_end;
-}
-
-Trace::NodeConst Trace::Head() const
-{
-    return m_container.begin();
-}
-
-Trace::NodeConst Trace::Tail() const
-{
-    return m_container.begin() + m_end;
-}
-
-const std::size_t& Trace::Size() const
-{
-    return m_end;
-}
-
 void Trace::RemoveFromTail()
 {
     ASSERT(m_end != 0);
@@ -74,14 +49,4 @@ void Trace::Clear(const std::size_t& untill)
 void Trace::Clear()
 {
     Clear(0);
-}
-
-int& Trace::operator [] (const std::size_t& index)
-{
-    return m_container[index];
-}
-
-const int& Trace::operator [] (const std::size_t& index) const
-{
-    return m_container[index];
 }

@@ -9,14 +9,6 @@ Callback::Handle1<void, const SimCar::SimState&> SimCar::m_updateStateNotifier(0
 Callback::Handle2<void, const SimCar*, Road*> SimCar::m_updateGoOnNewRoad(0);
 Callback::Handle1<void, const SimCar*> SimCar::m_updateCarScheduled(0);
 
-void SimCar::NotifyUpdateState(const SimCar::SimState& state) const
-{
-    if (!m_updateStateNotifier.IsNull())
-        m_updateStateNotifier.Invoke(state);
-    if (!m_updateCarScheduled.IsNull() && state == SCHEDULED)
-        m_updateCarScheduled.Invoke(this);
-}
-
 SimCar::SimCar()
 {
     ASSERT(false);
@@ -71,174 +63,9 @@ void SimCar::SetIsForceOutput(const bool& forceOutput)
     m_isForceOutput = forceOutput;
 }
 
-Car* SimCar::GetCar() const
-{
-    return m_car;
-}
-
-void SimCar::SetRealTime(int realTime)
-{
-    ASSERT(!m_car->GetIsPreset());
-    ASSERT(realTime >= m_car->GetPlanTime());
-    *m_realTime = realTime;
-}
-
-int SimCar::GetRealTime() const
-{
-    return *m_realTime;
-}
-
-Trace& SimCar::GetTrace()
-{
-    return *m_trace;
-}
-
-const Trace& SimCar::GetTrace() const
-{
-    return *m_trace;
-}
-
-const bool& SimCar::GetIsReachedGoal() const
-{
-    return m_isReachGoal;
-}
-
-const bool& SimCar::GetIsInGarage() const
-{
-    return m_isInGarage;
-}
-
-void SimCar::LockOnNextRoad(const int& time)
-{
-    m_isLockOnNextRoad = true;
-    m_lockOnNextRoadTime = time;
-}
-
-const bool& SimCar::GetIsLockOnNextRoad() const
-{
-    return m_isLockOnNextRoad;
-}
-
-const int& SimCar::GetLockOnNextRoadTime() const
-{
-    return m_lockOnNextRoadTime >= 0 ? m_lockOnNextRoadTime : m_startTime;
-}
-
-const bool& SimCar::GetIsIgnored() const
-{
-    return m_isIgnored;
-}
-
-const int& SimCar::GetStartTime() const
-{
-    return m_startTime;
-}
-
-const bool& SimCar::GetIsForceOutput() const
-{
-    return m_isForceOutput;
-}
-
-int SimCar::GetNextRoadId() const
-{
-    return (*m_trace)[m_currentTraceIndex];
-}
-
-void SimCar::SetSimState(int time, SimState state)
-{
-    m_lastUpdateTime = time;
-    m_simState = state;
-    m_waitingCar = 0;
-    NotifyUpdateState(state);
-}
-
-int SimCar::GetLastUpdateTime() const
-{
-    return m_lastUpdateTime;
-}
-
-SimCar::SimState SimCar::GetSimState(int time)
-{
-    if (m_lastUpdateTime < 0) //inside the garage
-        return UNSCHEDULED;
-    if (time != m_lastUpdateTime)
-    {
-        ASSERT_MSG(m_simState == SCHEDULED, "the car must be scheduled in last time chip");
-        SetSimState(time, UNSCHEDULED);
-    }
-    return m_simState;
-}
-
-SimCar* SimCar::GetWaitingCar(int time)
-{
-    ASSERT(GetSimState(time) == WAITING);
-    ASSERT(m_waitingCar != 0);
-    return m_waitingCar;
-}
-
-const int& SimCar::GetCurrentTraceIndex() const
-{
-    return m_currentTraceIndex;
-}
-
-/*
-Trace::Node SimCar::GetCurrentTraceNode()
-{
-    return m_currentTraceNode;
-}
-
-Trace::NodeConst SimCar::GetCurrentTraceNode() const
-{
-    return m_currentTraceNode;
-}
-*/
-
-Road* SimCar::GetCurrentRoad() const
-{
-    return m_currentRoad;
-}
-
-int SimCar::GetCurrentLane() const
-{
-    ASSERT(m_currentRoad != 0);
-    return m_currentLane;
-}
-
-bool SimCar::GetCurrentDirection() const
-{
-    ASSERT(m_currentRoad != 0);
-    return m_currentDirection;
-}
-
-int SimCar::GetCurrentPosition() const
-{
-    ASSERT(m_currentRoad != 0);
-    return m_currentPosition;
-}
-
-Cross* SimCar::GetCurrentCross() const
-{
-    //ASSERT(m_currentRoad != 0);
-    if (m_currentRoad == 0) //still in garage
-    {
-        ASSERT(m_isInGarage);
-        return m_car->GetFromCross();
-    }
-    return m_currentDirection ? m_currentRoad->GetEndCross() : m_currentRoad->GetStartCross();
-}
-
-Cross::TurnType SimCar::GetCurrentTurnType() const
-{
-    int nextRoadId = GetNextRoadId();
-    ASSERT(nextRoadId >= 0 || GetCurrentCross() == m_car->GetToCross());
-    ASSERT(m_currentRoad != 0);
-    return nextRoadId < 0 ? Cross::DIRECT : GetCurrentCross()->GetTurnDirection(m_currentRoad->GetId(), nextRoadId);
-}
-
 void SimCar::UpdateOnRoad(int time, Road* road, int lane, bool direction, int position)
 {
-    auto state = GetSimState(time);
-    ASSERT_MSG(state != SCHEDULED, "the car is already be scheduled");
+    ASSERT_MSG(GetSimState(time) != SCHEDULED, "the car is already be scheduled");
     //if (state == WAITING)
     //    ASSERT_MSG(GetWaitingCar(time)->GetSimState(time) == SCHEDULED, "the waiting car need be scheduled first");
     m_isLockOnNextRoad = false;
@@ -309,8 +136,7 @@ void SimCar::UpdatePosition(int time, int position)
         << " on road " << m_currentRoad->GetOriginId() << "(" << m_currentRoad->GetId() << ")"
         << " lane " << m_currentLane
         << " dir " << m_currentDirection);
-    auto state = GetSimState(time);
-    ASSERT_MSG(state != SCHEDULED, "the car is already be scheduled");
+    ASSERT_MSG(GetSimState(time) != SCHEDULED, "the car is already be scheduled");
     ASSERT_MSG(m_currentRoad != 0, "the car is still in garage");
     SetSimState(time, SCHEDULED); //update state
     ASSERT(position > 0 && position <= m_currentRoad->GetLength());
@@ -319,11 +145,10 @@ void SimCar::UpdatePosition(int time, int position)
 
 void SimCar::UpdateWaiting(int time, SimCar* waitingCar)
 {
-    auto state = GetSimState(time);
     ASSERT(waitingCar != this);
-    ASSERT_MSG(state != SCHEDULED, "the car is already be scheduled");
+    ASSERT_MSG(GetSimState(time) != SCHEDULED, "the car is already be scheduled");
     ASSERT_MSG(m_currentRoad != 0, "the car is still in garage");
-    if(state != WAITING || waitingCar != m_waitingCar)
+    if(waitingCar != m_waitingCar)
     {
         SetSimState(time, WAITING); //update state
         ASSERT(waitingCar != 0);
