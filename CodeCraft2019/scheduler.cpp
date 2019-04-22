@@ -105,20 +105,34 @@ void Scheduler::HandleResult(int& time, SimScenario& scenario, Simulator::Update
     DoHandleResult(time, scenario, result);
 }
 
+void Scheduler::HandleBeforeGarageDispatch(const int& time, SimScenario& scenario)
+{
+    Timer::UpdateTimeCostBegin("Scheduler::Before Garage Dispatch");
+    DoHandleBeforeGarageDispatch(time, scenario);
+    Timer::UpdateTimeCostEnd("Scheduler::Before Garage Dispatch");
+}
+
 void Scheduler::HandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car)
 {
+    Timer::UpdateTimeCostBegin("Scheduler::Get Out Garage");
     DoHandleGetoutGarage(time, scenario, car);
+    Timer::UpdateTimeCostEnd("Scheduler::Get Out Garage");
 }
 
 void Scheduler::HandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car)
 {
+    Timer::UpdateTimeCostBegin("Scheduler::Fisrt Priority");
     DoHandleBecomeFirstPriority(time, scenario, car);
+    Timer::UpdateTimeCostEnd("Scheduler::Fisrt Priority");
 }
 
 void Scheduler::DoInitialize(SimScenario& scenario)
 { }
 
 void Scheduler::DoUpdate(int& time, SimScenario& scenario)
+{ }
+
+void Scheduler::DoHandleBeforeGarageDispatch(const int& time, SimScenario& scenario)
 { }
 
 void Scheduler::DoHandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car)

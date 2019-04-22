@@ -16,7 +16,7 @@ SimCar::SimCar()
 
 SimCar::SimCar(Car* car)
     : m_car(car), m_scenario(0), m_realTime(0), m_trace(&Tactics::Instance.GetTraces()[car->GetId()])
-    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1), m_isForceOutput(false), m_calculateTimeCache(-1)
+    , m_isInGarage(true), m_isReachGoal(false), m_isLockOnNextRoad(false), m_lockOnNextRoadTime(-1), m_isIgnored(false), m_startTime(-1), m_isForceOutput(false), m_calculateTimeCache(-1), m_calculateTimeToken(-1)
     , m_lastUpdateTime(-1), m_simState(SCHEDULED), m_waitingCar(0)
     , m_currentTraceIndex(0), m_currentRoad(0), m_currentLane(0), m_currentDirection(true), m_currentPosition(0)
 {
@@ -182,7 +182,7 @@ void SimCar::SetUpdateCarScheduledNotifier(const Callback::Handle1<void, const S
     m_updateCarScheduled = notifier;
 }
 
-int SimCar::CalculateArriveTime(bool useCache)
+int SimCar::CalculateSpendTime(bool useCache)
 {
     if (!useCache || m_calculateTimeCache < 0)
     {
@@ -205,5 +205,15 @@ int SimCar::CalculateArriveTime(bool useCache)
         }
     }
     ASSERT(m_calculateTimeCache > 0);
+    return m_calculateTimeCache;
+}
+
+int SimCar::CalculateSpendTime(const int& token)
+{
+    if (m_calculateTimeToken != token)
+    {
+        m_calculateTimeToken = token;
+        return CalculateSpendTime(false);
+    }
     return m_calculateTimeCache;
 }

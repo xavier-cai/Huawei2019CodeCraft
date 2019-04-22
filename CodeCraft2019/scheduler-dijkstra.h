@@ -43,6 +43,13 @@ private:
 
     /* appointment */
     std::vector< std::pair<int, int> > appointOnRoadCounter;
+    std::vector< std::pair<int, int> > timeWeightForRoad;
+
+    /* time weight */
+    std::vector< std::vector< std::pair<double, double> > > m_timeWeightForRoad;
+    void UpdateTimeWeight(SimCar* car);
+    bool UpdateCarTraceByDijkstraWithTimeWeight(const int& time, const SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const;
+
 
     /* for dispatching cars */
     std::set<int> m_notArrivedPresetCars;
