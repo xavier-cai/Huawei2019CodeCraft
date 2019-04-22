@@ -33,6 +33,7 @@ private:
     int m_startTime; //the time go on the first road
     bool m_isForceOutput;
     int m_calculateTimeCache;
+    int m_calculateTimeToken;
     
     /* indicate update state of car in simulation */
     int m_lastUpdateTime;
@@ -106,7 +107,8 @@ public:
     static void SetUpdateGoOnNewRoadNotifier(const Callback::Handle2<void, const SimCar*, Road*>& notifier);
     static void SetUpdateCarScheduledNotifier(const Callback::Handle1<void, const SimCar*>& notifier);
 
-    int CalculateArriveTime(bool useCache);
+    int CalculateSpendTime(bool useCache);
+    int CalculateSpendTime(const int& token);
     
 };//class SimCar
 

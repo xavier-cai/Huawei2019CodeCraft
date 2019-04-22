@@ -373,6 +373,8 @@ Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario
     }
     if (!result.Conflict)
     {
+        if (m_scheduler != 0)
+            m_scheduler->HandleBeforeGarageDispatch(time, scenario);
         GetVipOutFromGarage(time, scenario);
         GetOutFromGarage(time, scenario);
     }
@@ -523,7 +525,7 @@ void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, cons
         for (uint i = 0; i < garage.size(); ++i)
         {
             SimCar* car = garage[i];
-            if (!car->GetIsInGarage()) continue;
+            if (!car->GetIsInGarage() || car->GetRealTime() > time) continue;
             int oldTime = car->GetRealTime();
             if (m_scheduler != 0
                 && (!car->GetCar()->GetIsPreset() || car->GetIsForceOutput()))

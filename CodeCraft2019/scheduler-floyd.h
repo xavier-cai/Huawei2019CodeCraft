@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include <list>
 #include "dead-lock-solver.h"
+#include "garage-counter.h"
 
 class SchedulerFloyd : public Scheduler
 {
@@ -29,6 +30,7 @@ public:
 protected:
     virtual void DoInitialize(SimScenario& scenario) override;
     virtual void DoUpdate(int& time, SimScenario& scenario) override;
+    virtual void DoHandleBeforeGarageDispatch(const int& time, SimScenario& scenario) override;
     virtual void DoHandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car) override;
     virtual void DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car) override;
     virtual void DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result) override;
@@ -40,7 +42,11 @@ private:
     std::vector< std::vector<int> > m_connectionCrossToCross;
     std::vector< std::vector< std::vector<int> > > m_minPathCrossToCross;
 
-    /* appointment */
+    /* time weight */
+    std::vector< std::vector< std::pair<double, double> > > m_timeWeightForRoad;
+    void UpdateTimeWeight(SimCar* car);
+    bool UpdateCarTraceByDijkstraWithTimeWeight(const int& time, const SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const;
+
     std::vector< std::pair<int, int> > m_appointOnRoadCounter;
     
     /* for dispatching cars */
@@ -49,6 +55,7 @@ private:
     std::vector< std::pair<int, int> > m_garageMinSpeed;
     std::vector< std::pair<int, int> > m_garageTraceSizeLimit;
     std::vector<int> m_garagePlanCarNum;
+    GarageCounter m_garageDispatchCounter;
 
     /* for solving dead lock */
     DeadLockSolver m_deadLockSolver;
@@ -60,6 +67,7 @@ private:
     void RefreshNotArrivedPresetCars(SimScenario& scenario);
     bool UpdateCarTraceByDijkstra(const int& time, const SimScenario& scenario, SimCar* car) const;
     bool UpdateCarTraceByDijkstra(const int& time, const SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const;
+
 
     int m_updateInterval;
 
