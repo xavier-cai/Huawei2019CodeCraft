@@ -19,8 +19,14 @@
 !/config*-check*/answer.txt
 
 # code files
+!/util/
+!/scenario/
+!/simulatio/
+!/scheduler/
+!/tester/
 !/*.h
 !/*.cpp
+!/CMakeLists.txt
 
 # project files
 !CodeCraft2019.vcxproj

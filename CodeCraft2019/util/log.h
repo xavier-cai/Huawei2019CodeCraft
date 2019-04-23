@@ -90,6 +90,7 @@ public:
 
 };//class Log
 
+#ifdef LOG_ON
 #define LOG_IS_ENABLE (Log::Get(Log::GetName(*this)) == Log::ENABLE)
 
 #define LOG_IMPL(info, msg)                                 \
@@ -105,10 +106,13 @@ public:
         }                                                   \
     } while(false)
 
-#ifdef LOG_ON
 #define LOG(msg) LOG_IMPL("", msg)
+
 #else
+
+#define LOG_IS_ENABLE false
 #define LOG(...)
+
 #endif
 
 #endif

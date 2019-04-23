@@ -11,67 +11,73 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="car.cpp" />
     <ClCompile Include="CodeCraft-2019.cpp" />
-    <ClCompile Include="config.cpp" />
-    <ClCompile Include="cross.cpp" />
-    <ClCompile Include="dead-lock-solver.cpp" />
-    <ClCompile Include="file-reader.cpp" />
-    <ClCompile Include="load-state.cpp" />
-    <ClCompile Include="log.cpp" />
-    <ClCompile Include="map-array.cpp" />
-    <ClCompile Include="map-genrator.cpp" />
-    <ClCompile Include="memory-pool.cpp" />
-    <ClCompile Include="random-stream.cpp" />
-    <ClCompile Include="random.cpp" />
-    <ClCompile Include="road.cpp" />
-    <ClCompile Include="scenario.cpp" />
-    <ClCompile Include="scheduler-answer.cpp" />
-    <ClCompile Include="scheduler-floyd.cpp" />
-    <ClCompile Include="scheduler.cpp" />
-    <ClCompile Include="score-calculator.cpp" />
-    <ClCompile Include="sim-car.cpp" />
-    <ClCompile Include="sim-road.cpp" />
-    <ClCompile Include="sim-scenario-tester.cpp" />
-    <ClCompile Include="sim-scenario.cpp" />
-    <ClCompile Include="simulator.cpp" />
-    <ClCompile Include="tactics.cpp" />
-    <ClCompile Include="timer.cpp" />
-    <ClCompile Include="trace.cpp" />
+    <ClCompile Include="scenario\car.cpp" />
+    <ClCompile Include="scenario\config.cpp" />
+    <ClCompile Include="scenario\cross.cpp" />
+    <ClCompile Include="scenario\road.cpp" />
+    <ClCompile Include="scenario\scenario.cpp" />
+    <ClCompile Include="scheduler\dead-lock-solver.cpp" />
+    <ClCompile Include="scheduler\garage-counter.cpp" />
+    <ClCompile Include="scheduler\load-state.cpp" />
+    <ClCompile Include="scheduler\scheduler-answer.cpp" />
+    <ClCompile Include="scheduler\scheduler-dijkstra.cpp" />
+    <ClCompile Include="scheduler\scheduler-floyd.cpp" />
+    <ClCompile Include="scheduler\scheduler-time-weight.cpp" />
+    <ClCompile Include="scheduler\scheduler.cpp" />
+    <ClCompile Include="simulation\score-calculator.cpp" />
+    <ClCompile Include="simulation\sim-car.cpp" />
+    <ClCompile Include="simulation\sim-road.cpp" />
+    <ClCompile Include="simulation\sim-scenario.cpp" />
+    <ClCompile Include="simulation\simulator.cpp" />
+    <ClCompile Include="simulation\tactics.cpp" />
+    <ClCompile Include="simulation\trace.cpp" />
+    <ClCompile Include="tester\map-genrator.cpp" />
+    <ClCompile Include="tester\sim-scenario-tester.cpp" />
+    <ClCompile Include="util\file-reader.cpp" />
+    <ClCompile Include="util\log.cpp" />
+    <ClCompile Include="util\map-array.cpp" />
+    <ClCompile Include="util\memory-pool.cpp" />
+    <ClCompile Include="util\random-stream.cpp" />
+    <ClCompile Include="util\random.cpp" />
+    <ClCompile Include="util\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="assert.h" />
-    <ClInclude Include="callback.h" />
-    <ClInclude Include="car.h" />
-    <ClInclude Include="config.h" />
-    <ClInclude Include="copy-object.h" />
-    <ClInclude Include="cross.h" />
-    <ClInclude Include="dead-lock-solver.h" />
-    <ClInclude Include="define.h" />
-    <ClInclude Include="file-reader.h" />
-    <ClInclude Include="load-state.h" />
-    <ClInclude Include="log.h" />
-    <ClInclude Include="map-array.h" />
-    <ClInclude Include="map-generator.h" />
-    <ClInclude Include="memory-pool.h" />
-    <ClInclude Include="quick-map.h" />
-    <ClInclude Include="random-stream.h" />
-    <ClInclude Include="random.h" />
-    <ClInclude Include="road.h" />
-    <ClInclude Include="scenario.h" />
-    <ClInclude Include="scheduler-answer.h" />
-    <ClInclude Include="scheduler-floyd.h" />
-    <ClInclude Include="scheduler.h" />
-    <ClInclude Include="score-calculator.h" />
-    <ClInclude Include="sim-car.h" />
-    <ClInclude Include="sim-road.h" />
-    <ClInclude Include="sim-scenario-tester.h" />
-    <ClInclude Include="sim-scenario.h" />
-    <ClInclude Include="simulator.h" />
-    <ClInclude Include="tactics.h" />
-    <ClInclude Include="timer.h" />
-    <ClInclude Include="pmap.h" />
-    <ClInclude Include="trace.h" />
+    <ClInclude Include="scenario\car.h" />
+    <ClInclude Include="scenario\config.h" />
+    <ClInclude Include="scenario\cross.h" />
+    <ClInclude Include="scenario\road.h" />
+    <ClInclude Include="scenario\scenario.h" />
+    <ClInclude Include="scheduler\dead-lock-solver.h" />
+    <ClInclude Include="scheduler\garage-counter.h" />
+    <ClInclude Include="scheduler\load-state.h" />
+    <ClInclude Include="scheduler\scheduler-answer.h" />
+    <ClInclude Include="scheduler\scheduler-dijkstra.h" />
+    <ClInclude Include="scheduler\scheduler-floyd.h" />
+    <ClInclude Include="scheduler\scheduler-time-weight.h" />
+    <ClInclude Include="scheduler\scheduler.h" />
+    <ClInclude Include="simulation\score-calculator.h" />
+    <ClInclude Include="simulation\sim-car.h" />
+    <ClInclude Include="simulation\sim-road.h" />
+    <ClInclude Include="simulation\sim-scenario.h" />
+    <ClInclude Include="simulation\simulator.h" />
+    <ClInclude Include="simulation\tactics.h" />
+    <ClInclude Include="simulation\trace.h" />
+    <ClInclude Include="tester\map-generator.h" />
+    <ClInclude Include="tester\sim-scenario-tester.h" />
+    <ClInclude Include="util\assert.h" />
+    <ClInclude Include="util\callback.h" />
+    <ClInclude Include="util\copy-object.h" />
+    <ClInclude Include="util\define.h" />
+    <ClInclude Include="util\file-reader.h" />
+    <ClInclude Include="util\log.h" />
+    <ClInclude Include="util\map-array.h" />
+    <ClInclude Include="util\memory-pool.h" />
+    <ClInclude Include="util\pmap.h" />
+    <ClInclude Include="util\quick-map.h" />
+    <ClInclude Include="util\random-stream.h" />
+    <ClInclude Include="util\random.h" />
+    <ClInclude Include="util\timer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7FE48AE7-6698-4131-96AE-259872CBC346}</ProjectGuid>
@@ -104,9 +110,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)util;$(ProjectDir)scenario;$(ProjectDir)simulation;$(ProjectDir)scheduler;$(ProjectDir)tester;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)util;$(ProjectDir)scenario;$(ProjectDir)simulation;$(ProjectDir)scheduler;$(ProjectDir)tester;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

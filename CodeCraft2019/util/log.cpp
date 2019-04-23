@@ -36,7 +36,7 @@ void Log::Disable(std::string name)
 }
 
 #include <fstream>
-#include <assert.h>
+#include "assert.h"
 std::ostream* Log::GetOutstream()
 {
     //return &std::cout;
@@ -47,7 +47,7 @@ std::ostream* Log::GetOutstream()
         if (!ofs.is_open())
         {
             std::cout << "initiliaze log stream failed" << std::endl;
-            assert(false);
+            ASSERT(false);
         }
         init = true;
     }
