@@ -23,6 +23,7 @@ public:
 
     void SetSelectedRoadCallback(const Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::vector<int>&, SimCar*>& cb); //return selection & is car trace handled
     void SetOperationDelaySingleRoad(const bool& enable);
+    void SetCanChangedPresetN(const int& presetN);
 
 private:
     int DoHandleDeadLock(int& time, SimScenario& scenario);
@@ -41,6 +42,7 @@ private:
     DeadLockSolver* m_subSolver; //create a sub solver when dead lock occurs in smaller time than before
 
     bool m_isSingleRoadDelay;
+    int m_canChangedPresetN;
     std::map< int, std::set<int> > m_deadLockMemory; //car id -> used next road id
     Callback::Handle3<std::pair<int, bool>, SimScenario&, const std::vector<int>&, SimCar*> m_selectedRoadCallback; //for selecting new road to break dead lock
 

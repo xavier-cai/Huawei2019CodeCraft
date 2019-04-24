@@ -550,8 +550,10 @@ void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, cons
     }
 }
 
-void Simulator::GetDeadLockCars(const int& time, SimScenario& scenario, std::list<SimCar*>& result, int n) const
+std::list<SimCar*> Simulator::GetDeadLockCars(const int& time, SimScenario& scenario) const
 {
+    //find all waiting first priority cars
+    std::list<SimCar*> allFirstPriorityCars;
     for (uint iCross = 0; iCross < Scenario::Crosses().size(); ++iCross)
     {
         Cross* cross = Scenario::Crosses()[iCross];
@@ -568,19 +570,56 @@ void Simulator::GetDeadLockCars(const int& time, SimScenario& scenario, std::lis
                     if (firstPriority != 0 && firstPriority->GetSimState(time) != SimCar::SCHEDULED)
                     {
                         ASSERT(firstPriority->GetSimState(time) == SimCar::WAITING);
-                        ASSERT(firstPriority->GetIsLockOnNextRoad());
+                        ASSERT_MSG(firstPriority->GetIsLockOnNextRoad() || firstPriority->GetCurrentCross() == firstPriority->GetCar()->GetToCross()
+                            , *(firstPriority->GetCar()) << " cross " << iCross << " road " << ID(*(firstPriority->GetCurrentRoad())) << " pos " << firstPriority->GetCurrentPosition());
                         //if (firstPriority->GetWaitingCar(time)->GetCurrentCross()->GetId() != crossId)
-                        {
-                            result.push_back(firstPriority);
-                            if (n > 0)
-                                if (--n <= 0)
-                                    return;
-                        }
+                            allFirstPriorityCars.push_back(firstPriority);
                     }
                 }
             }
         }
     }
+
+    //find a loop in them
+    std::vector<SimCar*> firstPriorities;
+    int deadLockIndex = -1;
+    firstPriorities.reserve(allFirstPriorityCars.size());
+    SimCar* currentCar = allFirstPriorityCars.front();
+    while (true)
+    {
+        SimCar* newCar = currentCar->GetWaitingCar(time);
+        if (currentCar->GetIsLockOnNextRoad()) //this is the first priority car
+        {
+            //try find it in recorded cars
+            for (uint i = 0; i < firstPriorities.size(); ++i)
+            {
+                if (firstPriorities[i] == currentCar)
+                {
+                    LOG("find loop of " << ID(*(currentCar->GetCar())));
+                    deadLockIndex = i;
+                    break;
+                }
+            }
+            //if finded break
+            if (deadLockIndex >= 0)
+                break;
+            Cross* newCross = newCar->GetCurrentCross();
+            Cross* currentCross = currentCar->GetCurrentCross();
+            if (newCross != currentCross)
+            {
+                LOG("find loop jump from " << ID(*currentCross)
+                    << " to " << ID(*newCross));
+                firstPriorities.push_back(currentCar);
+                LOG("push back " << ID(*(currentCar->GetCar())));
+            }
+        }
+        currentCar = newCar;
+    }
+
+    std::list<SimCar*> result;
+    for (uint i = deadLockIndex; i < firstPriorities.size(); ++i)
+        result.push_back(firstPriorities[i]);
+    return result;
 }
 
 void Simulator::PrintCrossState(const int& time, SimScenario& scenario, Cross* cross) const
@@ -620,8 +659,7 @@ void Simulator::PrintDeadLock(const int& time, SimScenario& scenario) const
 {
     if (LOG_IS_ENABLE)
     {
-        std::list<SimCar*> result;
-        GetDeadLockCars(time, scenario, result);
+        auto result = GetDeadLockCars(time, scenario);
         for (auto ite = result.begin(); ite != result.end(); ite++)
         {
             SimCar*& car = *ite;

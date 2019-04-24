@@ -7,12 +7,17 @@
 
 DeadLockSolver::DeadLockSolver()
     : m_deadLockTime(-1), m_firstLockOnTime(-1), m_deadLockTraceIndexes(0), m_depth(0), m_actived(true), m_subSolver(0)
-    , m_isSingleRoadDelay(false)
+    , m_isSingleRoadDelay(false), m_canChangedPresetN(0)
 { }
 
 void DeadLockSolver::SetOperationDelaySingleRoad(const bool& enable)
 {
     m_isSingleRoadDelay = enable;
+}
+
+void DeadLockSolver::SetCanChangedPresetN(const int& presetN)
+{
+    m_canChangedPresetN = presetN;
 }
 
 void DeadLockSolver::Initialize(const int& time, SimScenario& scenario)
@@ -64,43 +69,13 @@ bool DeadLockSolver::OperationDelay(const int& time, SimScenario& scenario, std:
     {
         if (deadLockCars.size() > 0)
         {
-            std::vector<SimCar*> firstPriorities;
-            int deadLockIndex = -1;
-            firstPriorities.reserve(deadLockCars.size());
-            SimCar* currentCar = deadLockCars.front();
-            while (true)
-            {
-                SimCar* newCar = currentCar->GetWaitingCar(time);
-                if (currentCar->GetIsLockOnNextRoad()) //this is the first priority car
-                {
-                    //try find it in recorded cars
-                    for (uint i = 0; i < firstPriorities.size(); ++i)
-                    {
-                        if (firstPriorities[i] == currentCar)
-                        {
-                            LOG("find loop of " << ID(*(currentCar->GetCar())));
-                            deadLockIndex = i;
-                            break;
-                        }
-                    }
-                    //if finded break
-                    if (deadLockIndex >= 0)
-                        break;
-                    Cross* newCross = newCar->GetCurrentCross();
-                    Cross* currentCross = currentCar->GetCurrentCross();
-                    if (newCross != currentCross)
-                    {
-                        LOG("find loop jump from " << ID(*currentCross)
-                            << " to " << ID(*newCross));
-                        firstPriorities.push_back(currentCar);
-                        LOG("push back " << ID(*(currentCar->GetCar())));
-                    }
-                }
-                currentCar = newCar;
-            }
-            ASSERT(deadLockIndex >= 0 && deadLockIndex < firstPriorities.size());
-            int rngRoadIndex = Random::Uniform(deadLockIndex, firstPriorities.size() - deadLockIndex);
-            SimCar* selected = firstPriorities[rngRoadIndex];
+            int rngRoadIndex = Random::Uniform(0, deadLockCars.size());
+            SimCar* selected = 0;
+            for (auto ite = deadLockCars.begin(); ite != deadLockCars.end() && rngRoadIndex >= 0; ++ite, --rngRoadIndex)
+                selected = *ite;
+
+            ASSERT(rngRoadIndex >= 0 && rngRoadIndex < deadLockCars.size() && selected != 0);
+
             SimRoad* road = scenario.Roads()[selected->GetCurrentRoad()->GetId()];
             //log
             {
@@ -147,9 +122,26 @@ bool DeadLockSolver::OperationDelay(const int& time, SimScenario& scenario, std:
 
 bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario, std::list<SimCar*>& cars)
 {
-    double operatorFactor = 0.5;
+    int presetCarNInDeadLockCars = 0;
+    for (auto ite = cars.begin(); ite != cars.end(); )
+    {
+        SimCar* car = *ite;
+        if (car->GetCurrentCross() == car->GetCar()->GetToCross())
+        {
+            ite = cars.erase(ite);
+            continue;
+        }
+        else if (car->GetCar()->GetIsPreset() && !car->GetIsForceOutput())
+            ++presetCarNInDeadLockCars;
+        ++ite;
+    }
+
+    double operatorFactor = 0.8;
     int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
     int operatorCounterMax = operatorCounter;
+
+    bool isNeedChangePreset = cars.size() - presetCarNInDeadLockCars < operatorCounterMax;
+
     while (operatorCounter > 0)
     {
         //ASSERT(cars.size() > 0);
@@ -170,10 +162,20 @@ bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario
                 
             if (rng < operatorFactor) //change path
             {
-                if ((*ite)->GetCar()->GetIsPreset())
+                if ((*ite)->GetCar()->GetIsPreset() && !(*ite)->GetIsForceOutput())
                 {
-                    ite = cars.erase(ite);
-                    continue;
+                    if (isNeedChangePreset && m_canChangedPresetN > 0) //change preset trace
+                    {
+                        --m_canChangedPresetN;
+                        (*ite)->SetIsForceOutput(true);
+                        for (auto iteBackup = m_backups.begin(); iteBackup != m_backups.end(); ++iteBackup)
+                            iteBackup->second->Cars()[(*ite)->GetCar()->GetId()]->SetIsForceOutput(true);
+                    }
+                    else
+                    {
+                        ite = cars.erase(ite);
+                        continue;
+                    }
                 }
 
                 int nextRoad = (*ite)->GetNextRoadId();
@@ -300,14 +302,13 @@ int DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
         m_deadLockTraceIndexes[i] = car->GetCurrentTraceIndex();
     }
 
-    std::list<SimCar*> cars;
-    Simulator::Instance.GetDeadLockCars(time, scenario, cars);
+    auto cars = Simulator::Instance.GetDeadLockCars(time, scenario);
     ASSERT(cars.size() >= 4); //for forming a loop need at least 4 road
 
     typedef bool (DeadLockSolver::*SolverHandle)(const int&, SimScenario&, std::list<SimCar*>&);
     std::list<SolverHandle> handles;
-    handles.push_back(&DeadLockSolver::OperationDelay);
-    //handles.push_back(&DeadLockSolver::OperationChangeTrace);
+    //handles.push_back(&DeadLockSolver::OperationDelay);
+    handles.push_back(&DeadLockSolver::OperationChangeTrace);
 
     //start solving the dead lock
     bool result = false;
