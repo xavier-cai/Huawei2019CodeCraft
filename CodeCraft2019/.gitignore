@@ -21,7 +21,7 @@
 # code files
 !/util/
 !/scenario/
-!/simulatio/
+!/simulation/
 !/scheduler/
 !/tester/
 !/*.h
