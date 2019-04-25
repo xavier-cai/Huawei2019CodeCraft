@@ -140,8 +140,6 @@ bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario
     int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
     int operatorCounterMax = operatorCounter;
 
-    bool isNeedChangePreset = cars.size() - presetCarNInDeadLockCars < operatorCounterMax;
-
     while (operatorCounter > 0)
     {
         //ASSERT(cars.size() > 0);
@@ -162,22 +160,6 @@ bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario
                 
             if (rng < operatorFactor) //change path
             {
-                if ((*ite)->GetCar()->GetIsPreset() && !(*ite)->GetIsForceOutput())
-                {
-                    if (isNeedChangePreset && m_canChangedPresetN > 0) //change preset trace
-                    {
-                        --m_canChangedPresetN;
-                        (*ite)->SetIsForceOutput(true);
-                        for (auto iteBackup = m_backups.begin(); iteBackup != m_backups.end(); ++iteBackup)
-                            iteBackup->second->Cars()[(*ite)->GetCar()->GetId()]->SetIsForceOutput(true);
-                    }
-                    else
-                    {
-                        ite = cars.erase(ite);
-                        continue;
-                    }
-                }
-
                 int nextRoad = (*ite)->GetNextRoadId();
                 int from = car->GetCurrentCross()->GetId();
                 int to = car->GetCar()->GetToCrossId();
@@ -201,6 +183,22 @@ bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario
                 bool pushTrace = true;
                 if (selections.size() > 0)
                 {
+                    if (car->GetCar()->GetIsPreset() && !(*ite)->GetIsForceOutput())
+                    {
+                        if (m_canChangedPresetN > 0) //change preset trace
+                        {
+                            --m_canChangedPresetN;
+                            LOG("change car " << *(car->GetCar()) << " to force output car, left chances " << m_canChangedPresetN);
+                            car->SetIsForceOutput(true);
+                            for (auto iteBackup = m_backups.begin(); iteBackup != m_backups.end(); ++iteBackup)
+                                iteBackup->second->Cars()[car->GetCar()->GetId()]->SetIsForceOutput(true);
+                        }
+                        else
+                        {
+                            ite = cars.erase(ite);
+                            continue;
+                        }
+                    }
                     if (m_selectedRoadCallback.IsNull())
                     {
                         int index = Random::Uniform(0, selections.size());
@@ -264,6 +262,7 @@ void DeadLockSolver::UpdateFirstLockOnTime(const int& time)
 {
     if (m_firstLockOnTime < 0 || time < m_firstLockOnTime)
     { 
+        LOG(time);
         m_firstLockOnTime = time;
     }
 }

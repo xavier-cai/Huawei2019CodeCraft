@@ -475,7 +475,7 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
             ASSERT(!goout || !car->GetCar()->GetIsVip()); //vip car is not expect get out in function
             if (!goout)
             {
-                if (car->GetIsForceOutput())
+                if (car->GetCar()->GetIsPreset() && !car->GetIsLockOnNextRoad())
                     car->LockOnNextRoad(time);
                 car->UpdateStayInGarage(time);
             }
@@ -537,7 +537,15 @@ void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, cons
                 ASSERT(car->GetNextRoadId() >= 0);
                 ASSERT(car->GetRealTime() == oldTime || car->GetRealTime() > time);
                 if (roadId < 0 || car->GetNextRoadId() == roadId)
-                    GetCarOutFromGarage(time, scenario, car);
+                {
+                    bool goout = GetCarOutFromGarage(time, scenario, car);
+                    if (!goout)
+                    {
+                        if (car->GetCar()->GetIsPreset() && !car->GetIsLockOnNextRoad())
+                            car->LockOnNextRoad(time);
+                        car->UpdateStayInGarage(time);
+                    }
+                }
             }
         }
     }
@@ -604,10 +612,13 @@ std::list<SimCar*> Simulator::GetDeadLockCars(const int& time, SimScenario& scen
                 break;
             Cross* newCross = newCar->GetCurrentCross();
             Cross* currentCross = currentCar->GetCurrentCross();
-            if (newCross != currentCross)
+            if (currentCar->GetIsLockOnNextRoad())
             {
-                LOG("find loop jump from " << ID(*currentCross)
-                    << " to " << ID(*newCross));
+                if (newCross != currentCross)
+                {
+                    LOG("find loop jump from " << ID(*currentCross)
+                        << " to " << ID(*newCross));
+                }
                 firstPriorities.push_back(currentCar);
                 LOG("push back " << ID(*(currentCar->GetCar())));
             }

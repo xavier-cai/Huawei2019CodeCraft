@@ -159,6 +159,7 @@ inline const bool& SimCar::GetIsInGarage() const
 
 inline void SimCar::LockOnNextRoad(const int& time)
 {
+    ASSERT(!m_isLockOnNextRoad);
     m_isLockOnNextRoad = true;
     m_lockOnNextRoadTime = time;
 }
