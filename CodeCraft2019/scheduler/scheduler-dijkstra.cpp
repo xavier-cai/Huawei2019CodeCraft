@@ -104,7 +104,9 @@ void SchedulerDijkstra::SetIsVipCarDispatchFree(bool v)
 
 bool CompareVipCarsDijkstra(SimCar* a, SimCar* b)
 {
-    return a->CalculateSpendTime(true) > b->CalculateSpendTime(true);
+    int ta = a->CalculateSpendTime(true);
+    int tb = b->CalculateSpendTime(true);
+    return ta != tb ? ta > tb : a->GetCar()->GetOriginId() < b->GetCar()->GetOriginId();
 }
 
 void SchedulerDijkstra::HandlePresetCars(SimScenario& scenario)

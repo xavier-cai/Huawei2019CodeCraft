@@ -36,8 +36,7 @@ bool CompareCar(SimCar* a, SimCar* b)
         return (a->CalculateSpendTime(StaticTime) > b->CalculateSpendTime(StaticTime));
     if (a->GetCar()->GetMaxSpeed() != b->GetCar()->GetMaxSpeed())
         return a->GetCar()->GetMaxSpeed() < b->GetCar()->GetMaxSpeed();
-    
-    return false;
+    return a->GetCar()->GetOriginId() < b->GetCar()->GetOriginId();
 }
 
 void GarageCounter::Update(const int& time, SimScenario& scenario)

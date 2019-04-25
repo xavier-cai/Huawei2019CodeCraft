@@ -34,7 +34,6 @@ protected:
     virtual void DoHandleGetoutGarage(const int& time, SimScenario& scenario, SimCar* car) override;
     virtual void DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car) override;
     virtual void DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result) override;
-    void HandlePresetCars(SimScenario& scenario);
 
 private:
     /* algorithm floyde */
@@ -63,6 +62,7 @@ private:
     std::pair<int, bool> SelectBestRoad(SimScenario& scenario, const std::vector<int>& list, SimCar* car);
 
     /* private interfaces */
+    void HandlePresetCars(SimScenario& scenario, const int& canChangesN);
     void CalculateWeight(SimScenario& scenario);
     void RefreshNotArrivedPresetCars(SimScenario& scenario);
     bool UpdateCarTraceByDijkstra(const int& time, const SimScenario& scenario, SimCar* car) const;

@@ -9,9 +9,7 @@ Simulator Simulator::Instance;
 Simulator::Simulator()
     : m_scheduler(0), m_scheduledCarsN(0), m_reachedCarsN(0), m_conflictFlag(false)
     , m_isEnableCheater(true)
-{
-    SimCar::SetUpdateStateNotifier(Callback::Create(&Simulator::HandleUpdateState, this));
-}
+{ }
 
 void Simulator::SetScheduler(Scheduler* scheduler)
 {
@@ -304,6 +302,7 @@ bool CompareRoadId(SimRoad* a, SimRoad* b)
 
 Simulator::UpdateResult Simulator::Update(const int& time, SimScenario& scenario)
 {
+    SimCar::SetUpdateStateNotifier(Callback::Create(&Simulator::HandleUpdateState, this));
     Simulator::UpdateResult result;
     result.Conflict = false;
 
