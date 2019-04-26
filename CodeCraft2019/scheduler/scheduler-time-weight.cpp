@@ -17,10 +17,10 @@ void SchedulerTimeWeight::InitilizeConfidence()
         return;
     initialized = true;
 
-    m_maxValidRange = 200;
+    m_maxValidRange = Scenario::Roads().size();
 
     int maxN = m_maxValidRange;
-    double p = 0.99;
+    double p = 0.97;
     double bound = 0.5e-5; //10w cars -> 0.5 weight
 
     std::vector< std::vector<double> > binomial;
@@ -86,11 +86,28 @@ void SchedulerTimeWeight::InitilizeConfidence()
     }
 }
 
+struct CompareCarForDispatchStruct
+{
+    bool operator () (SimCar* a, SimCar* b)
+    {
+        const Car* ac = a->GetCar();
+        const Car* bc = b->GetCar();
+        if (ac->GetIsVip() != bc->GetIsVip())
+            return ac->GetIsVip();
+        if (ac->GetMaxSpeed() != bc->GetMaxSpeed())
+            return ac->GetMaxSpeed() < bc->GetMaxSpeed();
+        if (a->GetRealTime() != b->GetRealTime())
+            return a->GetRealTime() < b->GetRealTime();
+        return ac->GetId() < bc->GetId();
+    }
+
+} CompareCarForDispatch;
+
 SchedulerTimeWeight::SchedulerTimeWeight()
     : m_updateInterval(1), m_carWeightStartTime(-1)
 { }
 
-void SchedulerTimeWeight::InitilizeBestTraceByFloyd()
+void SchedulerTimeWeight::InitializeBestTraceByFloyd()
 {
     int crossSize = Scenario::Crosses().size();
 
@@ -196,6 +213,165 @@ void SchedulerTimeWeight::InitilizeBestTraceByFloyd()
     }
 }
 
+void SchedulerTimeWeight::InitializeCarTraceByBeastTrace(SimScenario& scenario)
+{
+    for (uint i = 0; i < scenario.Cars().size(); ++i)
+    {
+        SimCar* car = scenario.Cars()[i];
+        if (car->GetCar()->GetIsPreset()) continue;
+        auto& best = m_bestTrace[car->GetCar()->GetFromCrossId()][car->GetCar()->GetToCrossId()].first;
+        for (auto ite = best.begin(); ite != best.end(); ite++)
+            car->GetTrace().AddToTail(*ite);
+    }
+}
+
+void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
+{
+    uint crossCount = Scenario::Crosses().size();
+    std::vector< std::vector<double> > dijkWeight;
+    std::vector<int> dijkLengthList;
+    std::vector<bool> dijkVisitedList;
+    std::vector<int> dijkPathLastCrossId;
+    dijkWeight.resize(crossCount);
+    dijkLengthList.resize(crossCount);
+    dijkVisitedList.resize(crossCount);
+    dijkPathLastCrossId.resize(crossCount);
+    for (uint i = 0; i < crossCount; ++i)
+        dijkWeight[i].resize(crossCount, Inf);
+    for (uint i = 0; i < Scenario::Roads().size(); ++i)
+    {
+        const Road* road = Scenario::Roads()[i];
+        dijkWeight[road->GetStartCrossId()][road->GetEndCrossId()] = road->GetLength();
+        if (road->GetIsTwoWay())
+            dijkWeight[road->GetEndCrossId()][road->GetStartCrossId()] = road->GetLength();
+    }
+
+    std::vector< std::vector<SimCar*> > cars;
+    cars.resize(Scenario::Crosses().size());
+    for (uint i = 0; i < scenario.Cars().size(); ++i)
+    {
+        SimCar* car = scenario.Cars()[i];
+        if (car == 0) continue;
+        ASSERT(car->GetIsInGarage());
+        if (car->GetCar()->GetIsPreset())
+        {
+            Cross* cross = car->GetCar()->GetFromCross();
+            for (auto ite = car->GetTrace().Head(); ite != car->GetTrace().Tail(); ++ite)
+            {
+                const Road* road = Scenario::Roads()[*ite];
+                Cross* peer = road->GetPeerCross(cross);
+                dijkWeight[cross->GetId()][peer->GetId()] += 2.0;
+                cross = peer;
+            }
+        }
+        else
+        {
+            cars[car->GetCar()->GetFromCrossId()].push_back(car);
+        }
+    }
+
+    for (uint i = 0; i < cars.size(); ++i)
+        std::sort(cars[i].begin(), cars[i].end(), CompareCarForDispatch);
+
+    int notEndCount = Scenario::Crosses().size();
+    std::vector<int> indexInGarage;
+    indexInGarage.resize(Scenario::Crosses().size(), 0);
+    while (notEndCount > 0)
+    for (uint i = 0; i < Scenario::Crosses().size(); ++i)
+    {
+        if (cars[i].size() == indexInGarage[i]) continue;
+        SimCar* car = cars[i][indexInGarage[i]];
+
+        int from = car->GetCar()->GetFromCross()->GetId();
+        int to = car->GetCar()->GetToCross()->GetId();
+        //calculate
+        for (uint iCross = 0; iCross < crossCount; ++iCross)
+        {
+            if (from != iCross)
+            {
+                dijkLengthList[iCross] = dijkWeight[from][iCross];
+                dijkPathLastCrossId[iCross] = from;
+            }
+            else
+            {
+                dijkLengthList[iCross] = Inf;
+                dijkPathLastCrossId[iCross] = -1;
+            }
+            dijkVisitedList[iCross] = false;
+        }
+        dijkLengthList[from] = 0;
+        dijkPathLastCrossId[from] = from;
+        dijkVisitedList[from] = true;
+        for (uint iExtend = 0; iExtend < crossCount - 1; ++iExtend)
+        {
+            int min = Inf;
+            int visited = -1;
+            for (uint iMin = 0; iMin < crossCount; ++iMin)
+            {
+                if (!dijkVisitedList[iMin] && dijkLengthList[iMin] < min)
+                {
+                    min = dijkLengthList[iMin];
+                    visited = iMin;
+                }
+            }
+
+            ASSERT(visited != -1);
+            dijkVisitedList[visited] = true;
+            for (uint iUpdate = 0; iUpdate < crossCount; ++iUpdate)
+            {
+                if (!dijkVisitedList[iUpdate])
+                {
+                    double thisLenght = min + dijkWeight[visited][iUpdate];
+                    if (thisLenght< dijkLengthList[iUpdate])
+                    {
+                        dijkLengthList[iUpdate] = thisLenght;
+                        dijkPathLastCrossId[iUpdate] = visited;
+                    }
+                }
+            }
+        }
+
+        std::vector<int> crossListDiji;
+
+        int endCrossId = to;
+        while (endCrossId != from)
+        {
+            crossListDiji.push_back(endCrossId);
+            endCrossId = dijkPathLastCrossId[endCrossId];
+        }
+        //crossListDiji.push_front(endCrossId);
+
+        //check path valid
+        Cross* lastCross = car->GetCar()->GetFromCross();
+        if (!car->GetIsInGarage())
+            lastCross = car->GetCurrentCross();
+        for (int crossIndex = crossListDiji.size() - 1; crossIndex >= 0; --crossIndex)
+        {
+            bool consistant = false;
+            Cross* thisCross = Scenario::Crosses()[crossListDiji[crossIndex]];
+            for (int dirIndex = (int)Cross::NORTH; dirIndex <= (int)Cross::WEST; dirIndex++)
+            {
+                Road* road = lastCross->GetRoad((Cross::DirectionType)dirIndex);
+                if (road != 0)
+                {
+                    if ((road->GetStartCrossId() == lastCross->GetId() && road->GetEndCrossId() == thisCross->GetId())
+                        || (road->GetEndCrossId() == lastCross->GetId() && road->GetStartCrossId() == thisCross->GetId() && road->GetIsTwoWay()))
+                    {
+                        consistant = true;
+                        car->GetTrace().AddToTail(road->GetId());
+                        dijkWeight[lastCross->GetId()][thisCross->GetId()] += 1.2 / sqrt(road->GetLanes());
+                        break;
+                    }
+                }
+            }
+            ASSERT_MSG(consistant, "can not find the road bewteen " << lastCross->GetId() << " and " << thisCross->GetId());
+            lastCross = thisCross;
+        }
+
+        if (cars[i].size() == ++indexInGarage[i]) --notEndCount; //no cars here
+    }
+}
+
 void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
 {
     InitilizeConfidence();
@@ -220,42 +396,58 @@ void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
     m_threshold.resize(maxLanes + 1, std::make_pair(0.0, 0.0));
     for (int i = 1; i < maxLanes; ++i)
     {
-        m_threshold[i].first = 0.1 / sqrt(i);
-        m_threshold[i].second = 0.3 / sqrt(i);
+        m_threshold[i].first = 0.2 / sqrt(i);
+        m_threshold[i].second = 0.8 / sqrt(i);
     }
 
     for (uint i = 0; i < crossCount; ++i)
         m_bestTrace[i].resize(crossCount);
 
-    InitilizeBestTraceByFloyd();
+    InitializeBestTraceByFloyd();
+    //InitializeCarTraceByBeastTrace(scenario);
+    //InitializeCarTraceByDijkstra(scenario);
+    
 
-    //set trace for cars
+    struct Statistic
+    {
+        int Road;
+        bool Dir;
+        int Count;
+    };
+
+    struct CompareStatisticStruct
+    {
+        bool operator () (Statistic& a, Statistic& b)
+        {
+            return a.Count > b.Count;
+        }
+    } CompareStatistic;
+
+    std::vector<Statistic> statistic;
+    statistic.resize(roadCount * 2);
+    for (int i = 0; i < roadCount * 2; ++i)
+    {
+        statistic[i].Road = i % roadCount;
+        statistic[i].Dir = i < roadCount;
+        statistic[i].Count = 0;
+    }
+
     for (uint i = 0; i < scenario.Cars().size(); ++i)
     {
         SimCar* car = scenario.Cars()[i];
-        if (car->GetCar()->GetIsPreset()) continue;
-        auto& best = m_bestTrace[car->GetCar()->GetFromCrossId()][car->GetCar()->GetToCrossId()].first;
-        for (auto ite = best.begin(); ite != best.end(); ite++)
-            car->GetTrace().AddToTail(*ite);
+        Cross* cross = car->GetCar()->GetFromCross();
+        for (auto ite = car->GetTrace().Head(); ite != car->GetTrace().Tail(); ite++)
+        {
+            Road* road = Scenario::Roads()[*ite];
+            ++(statistic[(*ite) + (road->IsFromOrTo(cross->GetId()) ? 0 : roadCount)].Count);
+            cross = road->GetPeerCross(cross);
+        }
     }
+
+    std::sort(statistic.begin(), statistic.end(), CompareStatistic);
+    for (uint i = 0; i < statistic.size(); ++i)
+        LOG (Scenario::Roads()[statistic[i].Road]->GetOriginId() << " " << statistic[i].Dir << " " << statistic[i].Count);
 }
-
-struct CompareCarForDispatchStruct
-{
-    bool operator () (SimCar* a, SimCar* b)
-    {
-        const Car* ac = a->GetCar();
-        const Car* bc = b->GetCar();
-        if (ac->GetIsVip() != bc->GetIsVip())
-            return ac->GetIsVip();
-        if (ac->GetMaxSpeed() != bc->GetMaxSpeed())
-            return ac->GetMaxSpeed() < bc->GetMaxSpeed();
-        if (a->GetRealTime() != b->GetRealTime())
-            return a->GetRealTime() < b->GetRealTime();
-        return ac->GetId() < bc->GetId();
-    }
-
-} CompareCarForDispatch;
 
 void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
 {
@@ -303,32 +495,55 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
                 endFlag[i] = true;
                 break;
             }
-            SimCar* car = m_carList[i][dispatchIndex[i]];
-            if (IsAppropriateToDispatch(time, car))
+            while (dispatchIndex[i] < m_carList[i].size()) //untill find a car which can be dispatch
             {
-                UpdateTimeWeightForEachCar(time, car);
-                tryCounter[i] = 0;
-            }
-            else
-            {
-                car->SetRealTime(time + 1);
-                if (false && ++tryCounter[i] > 4) //give up in this garage
+                SimCar* car = m_carList[i][dispatchIndex[i]];
+                UpdateCarTraceByDijkstraWithTimeWeight(time, scenario, car);
+                if (IsAppropriateToDispatch(time, car))
                 {
-                    //give up left cars
-                    for (int iCar = dispatchIndex[i] + 1; iCar < m_carList[i].size(); ++iCar)
-                        m_carList[i][iCar]->SetRealTime(time + 1);
-                    dispatchIndex[i] = m_carList[i].size() - 1; //end in next loop
+                    UpdateTimeWeightForEachCar(time, car);
+                    tryCounter[i] = 0;
+                    ++dispatchIndex[i]; //...
+                    break;
                 }
+                else
+                {
+                    car->SetRealTime(time + 1);
+                    if (false && ++tryCounter[i] > 4) //give up in this garage
+                    {
+                        //give up left cars
+                        for (int iCar = dispatchIndex[i] + 1; iCar < m_carList[i].size(); ++iCar)
+                            m_carList[i][iCar]->SetRealTime(time + 1);
+                        dispatchIndex[i] = m_carList[i].size() - 1; //end in next loop
+                        ++dispatchIndex[i]; //...
+                        break;
+                    }
+                }
+                ++dispatchIndex[i];
             }
-            ++dispatchIndex[i];
         }
+    }
+}
+
+void SchedulerTimeWeight::DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car)
+{
+    ASSERT(!car->GetIsLockOnNextRoad());
+    SimRoad* nextRoad = scenario.Roads()[car->GetNextRoadId()];
+    if (nextRoad->GetCarN() > m_roadCapacity[car->GetNextRoadId()] * 0.7)
+    {
+        //need reset the trace
+        UpdateTimeWeightForEachCar(time, car, true); //decrease
+        std::vector<int> baned;
+        baned.push_back(car->GetCurrentRoad()->GetId());
+        UpdateCarTraceByDijkstraWithTimeWeight(time, scenario, car, baned);
+        UpdateTimeWeightForEachCar(time, car, false); //increase
     }
 }
 
 bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) const
 {
     ASSERT(car->GetIsInGarage());
-    static const double thresold = 0.2;
+    static const double thresold = 0.6;
     int lengthCount = 0;
     double weightCount = 0;
     int pos = 0;
@@ -345,6 +560,8 @@ bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) 
         {
             double weight = road->IsFromOrTo(cross->GetId()) ? m_carWeight[index][road->GetId()].first : m_carWeight[index][road->GetId()].second;
             double factor = weight / m_roadCapacity[road->GetId()];
+            if (factor > m_roadCapacity[road->GetId()] * 0.7)
+                return false;
             if (factor > m_threshold[road->GetLanes()].second) //too crowed
                 return false;
             weightCount += weight * (factor > m_threshold[road->GetLanes()].first ? 1.0 : 0.5);
@@ -356,7 +573,7 @@ bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) 
     return true;
 }
 
-void SchedulerTimeWeight::UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime)
+void SchedulerTimeWeight::UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime, const bool& isDecrease)
 {
     ASSERT(leaveTime >= startTime && startTime >= time);
     if (startTime - m_carWeightStartTime >= m_maxValidRange)
@@ -367,18 +584,30 @@ void SchedulerTimeWeight::UpdateTimeWeightByRoadAndTime(const int& time, const i
     int indexDelta = time - m_carWeightStartTime;
 
     const auto& collectionWeight = m_collectionWeight[deltaStart][deltaEnd];
-    for (int t = deltaEnd; t >= 0; --t)
+    for (int t = deltaStart - 1; t >= 0; --t) //before
     {
         const double& wba = collectionWeight[t];
         if (wba <= 0) break;
-        (dir ? m_carWeight[t + indexDelta][roadId].first : m_carWeight[t + indexDelta][roadId].second) += wba;
+        (dir ? m_carWeight[t + indexDelta][roadId].first : m_carWeight[t + indexDelta][roadId].second) += isDecrease ? -wba : wba;
+    }
+    for (int t = deltaStart; t <= deltaEnd; ++t)
+    {
+        (dir ? m_carWeight[t + indexDelta][roadId].first : m_carWeight[t + indexDelta][roadId].second) += isDecrease ? -collectionWeight[t] : collectionWeight[t];
+    }
+    for (int t = deltaEnd + 1; t + indexDelta < m_maxValidRange; ++t) //after
+    {
+        const double& wba = collectionWeight[t];
+        if (wba <= 0) break;
+        (dir ? m_carWeight[t + indexDelta][roadId].first : m_carWeight[t + indexDelta][roadId].second) += isDecrease ? -wba : wba;
     }
 }
 
-void SchedulerTimeWeight::UpdateTimeWeightForEachCar(const int& time, SimCar* car)
+void SchedulerTimeWeight::UpdateTimeWeightForEachCar(const int& originTime, SimCar* car, const bool& isDecrease)
 {
     if (car->GetIsReachedGoal() || car->GetRealTime() - m_carWeightStartTime >= m_maxValidRange)
         return;
+
+    int time = isDecrease ? m_carWeightStartTime : originTime;
 
     auto& carTrace = car->GetTrace();
     
@@ -405,7 +634,7 @@ void SchedulerTimeWeight::UpdateTimeWeightForEachCar(const int& time, SimCar* ca
         eventTime += next.first;
         pos = next.second;
 
-        UpdateTimeWeightByRoadAndTime(time, road->GetId(), road->IsFromOrTo(cross->GetId()), lastEventTime, eventTime - 1);
+        UpdateTimeWeightByRoadAndTime(time, road->GetId(), road->IsFromOrTo(cross->GetId()), lastEventTime, eventTime - 1, isDecrease);
         lastEventTime = eventTime;
         cross = road->GetPeerCross(cross);
     }
@@ -430,203 +659,254 @@ void SchedulerTimeWeight::UpdateCurrentWeightByScenario(const int& time, SimScen
     }
 }
 
-bool SchedulerTimeWeight::UpdateCarTraceByDijkstraWithTimeWeight(const int& time, SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const
+inline double WbaToLengthWeight(double wba, const int& capacity)
 {
-    //ASSERT(!car->GetIsInGarage());
+    double factor = wba / capacity;
+    if (factor < 0.2) wba = 0;
+    else if (factor > 0.7) wba *= 4;
+    return wba;
+}
+
+bool SchedulerTimeWeight::UpdateCarTraceByDijkstraWithTimeWeight(const int& time, SimScenario& scenario, SimCar* car, const std::vector<int>& banedFirstHop) const
+{
     ASSERT(!car->GetIsReachedGoal());
-    ASSERT(validFirstHop.size() > 0);
+    ASSERT(banedFirstHop.size() < 4);
+
+    int firstHopTime = time;
+    if (car->GetIsInGarage())
+        firstHopTime = std::max(time, car->GetRealTime());
+    else if (car->GetSimState(time) == SimCar::SCHEDULED)
+        ++firstHopTime;
+    ASSERT(firstHopTime >= m_carWeightStartTime);
+    firstHopTime -= m_carWeightStartTime;
+
+    struct DijkHop
+    {
+        DijkHop()
+            : Road(0), Time(-1), Position(-1), Weight(Inf)
+        { }
+        Road* Road;
+        int Time;
+        int Position;
+        int Weight;
+    };
+
+    struct DijWeight
+    {
+        DijWeight()
+            : Length(Inf), Road(-1)
+        { }
+        int Length;
+        int Road;
+        bool Dir;
+    };
 
     /* Dijkstra weight */
     static uint crossSize = 0;
-    static std::vector< std::vector<double> > lengthMap;
-    static std::vector<int> lengthList;
-    static std::vector<bool> visitedList;
-    static std::vector<int> pathLastCrossId;
+    static std::vector< std::vector<DijWeight> > dijkWeight;
+    static std::vector<DijkHop> dijkHopList;
+    static std::vector<bool> dijkVisitedList;
+    static std::vector<int> dijkPathLastCrossId;
 
     if (Scenario::Crosses().size() != crossSize)
     {
         crossSize = Scenario::Crosses().size();
-        lengthMap.resize(crossSize);
-        lengthList.resize(crossSize);
-        visitedList.resize(crossSize);
-        pathLastCrossId.resize(crossSize);
-        for (uint i = 0; i < crossSize; ++i)
+        dijkWeight.resize(crossSize);
+        dijkHopList.resize(crossSize);
+        dijkVisitedList.resize(crossSize);
+        dijkPathLastCrossId.resize(crossSize);
+        for (uint iCross = 0; iCross < crossSize; ++iCross)
         {
-            lengthMap[i].resize(crossSize);
+            dijkWeight[iCross].resize(crossSize);
+            for (uint jCross = 0; jCross < crossSize; ++ jCross)
+            {
+                dijkWeight[iCross][jCross].Length = Inf;
+                dijkWeight[iCross][jCross].Road = -1;
+            }
         }
-    }
-    int from = car->GetCar()->GetFromCrossId();
-    if (!car->GetIsInGarage())
-        from = car->GetCurrentCross()->GetId();
-    int to = car->GetCar()->GetToCrossId();
 
-    //initialize
-    for (uint iCross = 0; iCross < crossSize; ++iCross)
-    {
-        for (uint jCross = 0; jCross < crossSize; ++jCross)
+        for (uint i = 0; i < Scenario::Roads().size(); ++i)
         {
-            lengthMap[iCross][jCross] = Inf;
+            Road* road = Scenario::Roads()[i];
+            dijkWeight[road->GetStartCrossId()][road->GetEndCrossId()].Length = road->GetLength();
+            dijkWeight[road->GetStartCrossId()][road->GetEndCrossId()].Road = i;
+            dijkWeight[road->GetStartCrossId()][road->GetEndCrossId()].Dir = true;
+            if (road->GetIsTwoWay())
+            {
+                dijkWeight[road->GetEndCrossId()][road->GetStartCrossId()].Length = road->GetLength();
+                dijkWeight[road->GetEndCrossId()][road->GetStartCrossId()].Road = i;
+                dijkWeight[road->GetEndCrossId()][road->GetStartCrossId()].Dir = false;
+            }
         }
     }
+
+    struct WeightLengthBackup
+    {
+        int FromCross;
+        int EndCross;
+        int BackupLength;
+    };
+
+    std::vector<WeightLengthBackup> backupLength;
+    //if (!car->GetIsInGarage())
+    {
+        backupLength.reserve(banedFirstHop.size());
+        Cross* currentCross = car->GetCurrentCross();
+        for (uint i = 0; i < banedFirstHop.size(); ++i)
+        {
+            Road* banedRoad = Scenario::Roads()[banedFirstHop[i]];
+            if (banedRoad->CanStartFrom(currentCross->GetId()))
+            {
+                Cross* peer = banedRoad->GetPeerCross(currentCross);
+                WeightLengthBackup backup;
+                backup.FromCross = currentCross->GetId();
+                backup.EndCross = peer->GetId();
+                backup.BackupLength = dijkWeight[backup.FromCross][backup.EndCross].Length;
+                backupLength.push_back(backup);
+                dijkWeight[backup.FromCross][backup.EndCross].Length = Inf;
+            }
+        }
+    }
+
+    Cross* fromCross = car->GetCar()->GetFromCross();
+    if (!car->GetIsInGarage())
+        fromCross = car->GetCurrentCross();
+    int from = fromCross->GetId();
+    int to = car->GetCar()->GetToCrossId();
 
     //calculate
     for (uint iCross = 0; iCross < crossSize; ++iCross)
     {
-        if (iCross == from)
-        {
-            Cross* cross = Scenario::Crosses()[from];
-            for (uint i = 0; i < validFirstHop.size(); ++i)
-            {
-                Road* road = Scenario::Roads()[validFirstHop[i]];
-                ASSERT(road->CanStartFrom(from));
-                lengthMap[from][road->GetPeerCross(cross)->GetId()] = road->GetLength();
-            }
-        }
-        else
-        {
-            for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
-            {
-                Cross* cross = Scenario::Crosses()[iCross];
-                Road* road = cross->GetRoad((Cross::DirectionType)i);
-                if (road != 0)
-                {
-                    if (road->CanStartFrom(cross->GetId()))
-                    {
-                        lengthMap[cross->GetId()][road->GetPeerCross(cross)->GetId()] = road->GetLength();
-                    }
-                }
-            }
-        }
+        dijkHopList[iCross].Weight = Inf;
+        dijkHopList[iCross].Time = Inf;
+        dijkPathLastCrossId[iCross] = -1;
+        dijkVisitedList[iCross] = false;
     }
-    if (!car->GetIsInGarage())
-        lengthMap[from][car->GetCurrentRoad()->GetPeerCross(car->GetCurrentCross())->GetId()] = Inf;
-    for (uint iCross = 0; iCross < crossSize; ++iCross)
-    {
-        if (from != iCross && lengthMap[from][iCross] > 0)
+    DirectionType_Foreach(dir,
+        Road* road = fromCross->GetRoad(dir);
+        if (road == 0) continue;
+        if (!road->CanStartFrom(fromCross->GetId())) continue;
+        Cross* peer = road->GetPeerCross(fromCross);
+        if (!Is_Inf(dijkWeight[fromCross->GetId()][peer->GetId()].Length))
         {
-            Road* roadForUpdate = 0;
-            Cross* initCross = Scenario::Crosses()[from];
-            DirectionType_Foreach(dir,
-                Road* road = initCross->GetRoad(dir);
-            if (road != 0 && road->CanStartFrom(initCross->GetId()) && road->GetPeerCross(initCross)->GetId() == iCross)
-                roadForUpdate = road;
-            );
-            double roadFromOrTo = m_carWeight[roadForUpdate->GetId()][0].second;
-            if (roadForUpdate->IsFromOrTo(from))
-                roadFromOrTo = m_carWeight[roadForUpdate->GetId()][0].first;
-            lengthList[iCross] = lengthMap[from][iCross];
-            pathLastCrossId[iCross] = from;
+            if (car->GetIsInGarage())
+            {
+                dijkHopList[peer->GetId()].Time = firstHopTime;
+                double wba = WbaToLengthWeight(
+                    road->IsFromOrTo(fromCross->GetId()) ? m_carWeight[firstHopTime][road->GetId()].first : m_carWeight[firstHopTime][road->GetId()].second
+                    , m_roadCapacity[road->GetId()]);
+                dijkHopList[peer->GetId()].Weight = dijkWeight[fromCross->GetId()][peer->GetId()].Length + wba;
+                dijkHopList[peer->GetId()].Position = std::min(car->GetCar()->GetMaxSpeed(), road->GetLimit());
+            }
+            else
+            {
+                auto next = car->CalculateLeaveTime(car->GetCurrentRoad(), road, car->GetCurrentPosition());
+                int hopTime = firstHopTime + next.first - 1;
+                dijkHopList[peer->GetId()].Time = hopTime;
+                dijkHopList[peer->GetId()].Position = next.second;
+                double wba = 0;
+                if (hopTime < m_maxValidRange)
+                    wba = WbaToLengthWeight(
+                        road->IsFromOrTo(fromCross->GetId()) ? m_carWeight[hopTime][road->GetId()].first : m_carWeight[hopTime][road->GetId()].second
+                        , m_roadCapacity[road->GetId()]);
+                dijkHopList[peer->GetId()].Weight = dijkWeight[fromCross->GetId()][peer->GetId()].Length + wba;
+            }
+            dijkHopList[peer->GetId()].Road = road;
+            dijkPathLastCrossId[peer->GetId()] = from;
         }
-        else
-        {
-            lengthList[iCross] = Inf;
-            pathLastCrossId[iCross] = -1;
-        }
-        visitedList[iCross] = false;
-        pathLastCrossId[from] = from;
-        lengthList[from] = 0;
-    }
+    );
+    dijkPathLastCrossId[from] = from;
+    dijkHopList[from].Time = firstHopTime - 1;
+    dijkHopList[from].Position = car->GetIsInGarage() ? 0 : car->GetCurrentPosition();
+    dijkHopList[from].Weight = 0;
+    dijkVisitedList[from] = true;
 
-    visitedList[from] = true;
     for (uint iExtend = 0; iExtend < crossSize - 1; ++iExtend)
     {
         int min = Inf;
         int visited = -1;
         for (uint iMin = 0; iMin < crossSize; ++iMin)
         {
-            if (!visitedList[iMin] && lengthList[iMin] < min)
+            if (!dijkVisitedList[iMin] && dijkHopList[iMin].Weight < min)
             {
-                min = lengthList[iMin];
+                min = dijkHopList[iMin].Weight;
                 visited = iMin;
             }
         }
 
         ASSERT(visited != -1);
-        visitedList[visited] = true;
+        dijkVisitedList[visited] = true;
         int traceIndex = visited;
         int traceSize = 0;
         while (traceIndex != from)
         {
             traceSize++;
-            traceIndex = pathLastCrossId[traceIndex];
+            ASSERT(traceIndex >= 0 && traceIndex < dijkPathLastCrossId.size());
+            traceIndex = dijkPathLastCrossId[traceIndex];
         }
-        for (uint iUpdate = 0; iUpdate < crossSize; ++iUpdate)
-        {
-            Cross* visitedCross = Scenario::Crosses()[visited];
-            Road* roadForUpdate = 0;
-            if (visitedList[iUpdate] == false && lengthMap[visited][iUpdate] > 0)
+        Cross* visitedCross = Scenario::Crosses()[visited];
+        const auto& hop = dijkHopList[visited];
+        DirectionType_Foreach(dir, 
+            Road* road = visitedCross->GetRoad(dir);
+            if (road == 0) continue;
+            if (!road->CanStartFrom(visitedCross->GetId())) continue;
+            Cross* peerUpdate = road->GetPeerCross(visitedCross);
+            const auto& weight = dijkWeight[visited][peerUpdate->GetId()];
+            auto next = car->CalculateLeaveTime(hop.Road, road, hop.Position);
+            int reachTime = hop.Time + next.first;
+            double wba = 0;
+            if (reachTime < m_maxValidRange)
+                wba = WbaToLengthWeight(
+                    road->IsFromOrTo(visitedCross->GetId()) ? m_carWeight[reachTime][road->GetId()].first : m_carWeight[reachTime][road->GetId()].second
+                    , m_roadCapacity[road->GetId()]);
+            double sumWeight = min + dijkWeight[visited][peerUpdate->GetId()].Length + wba;
+            if (sumWeight < dijkHopList[peerUpdate->GetId()].Weight)
             {
-                DirectionType_Foreach(dir,
-                    Road* road = visitedCross->GetRoad(dir);
-                if (road != 0 && road->CanStartFrom(visitedCross->GetId()) && road->GetPeerCross(visitedCross)->GetId() == iUpdate)
-                    roadForUpdate = road;
-                );
-                ASSERT(roadForUpdate != 0);
-                double roadFromOrTo = m_carWeight[roadForUpdate->GetId()][traceSize + 1].second;
-                if (roadForUpdate->IsFromOrTo(visited))
-                    roadFromOrTo = m_carWeight[roadForUpdate->GetId()][traceSize + 1].first;
-                double sumWeightForUpdate = min + lengthMap[visited][iUpdate] + roadFromOrTo;
-                if (sumWeightForUpdate < lengthList[iUpdate])
-                {
-                    lengthList[iUpdate] = sumWeightForUpdate;
-                }
-                pathLastCrossId[iUpdate] = visited;
+                dijkHopList[peerUpdate->GetId()].Weight = sumWeight;
+                dijkHopList[peerUpdate->GetId()].Position = next.second;
+                dijkHopList[peerUpdate->GetId()].Road = road;
+                dijkHopList[peerUpdate->GetId()].Time = reachTime;
+                dijkPathLastCrossId[peerUpdate->GetId()] = visited;
             }
-        }
+        );
     }
 
-    static std::vector<int> crossListDiji;
-    static std::vector<int> pathListDiji;
-    crossListDiji.clear();
-    pathListDiji.clear();
-
+    car->GetTrace().Clear(car->GetCurrentTraceIndex());
+    std::vector<int> newTrace;
     int endCrossId = to;
     while (endCrossId != from)
     {
-        crossListDiji.push_back(endCrossId);
-        endCrossId = pathLastCrossId[endCrossId];
+        ASSERT(dijkHopList[endCrossId].Road != 0);
+        ASSERT(dijkHopList[endCrossId].Road->CanReachTo(endCrossId));
+        newTrace.push_back(dijkHopList[endCrossId].Road->GetId());
+        endCrossId = dijkPathLastCrossId[endCrossId];
     }
-    //crossListDiji.push_front(endCrossId);
+    for (int i = newTrace.size() - 1; i >= 0; --i)
+        car->GetTrace().AddToTail(newTrace[i]);
 
+    //recorver
+    for (uint i = 0; i < backupLength.size(); ++i)
+    {
+        const auto& backup = backupLength[i];
+        dijkWeight[backup.FromCross][backup.EndCross].Length = backup.BackupLength;
+    }
+
+#ifdef ASSERT_ON
     //check path valid
-    Cross* lastCross = car->GetCar()->GetFromCross();
-    if (!car->GetIsInGarage())
-        lastCross = car->GetCurrentCross();
-    for (int i = crossListDiji.size() - 1; i >= 0; --i)
+    ASSERT(car->GetTrace().Size() > 0);
+    Cross* frontCross = car->GetCar()->GetFromCross();
+    int frontRoad = -1;
+    for (auto ite = car->GetTrace().Head(); ite != car->GetTrace().Tail(); ite++)
     {
-        bool consistant = false;
-        Cross* thisCross = Scenario::Crosses()[crossListDiji[i]];
-        for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
-        {
-            Road* road = lastCross->GetRoad((Cross::DirectionType)i);
-            if (road != 0)
-            {
-                if ((road->GetStartCrossId() == lastCross->GetId() && road->GetEndCrossId() == thisCross->GetId())
-                    || (road->GetEndCrossId() == lastCross->GetId() && road->GetStartCrossId() == thisCross->GetId() && road->GetIsTwoWay()))
-                {
-                    consistant = true;
-                    pathListDiji.push_back(road->GetId());
-                    break;
-                }
-            }
-        }
-        ASSERT_MSG(consistant, "can not find the road bewteen " << lastCross->GetId() << " and " << thisCross->GetId());
-        lastCross = thisCross;
+        Road* road = Scenario::Roads()[*ite];
+        ASSERT(road != 0);
+        ASSERT(road->GetId() >= 0);
+        ASSERT(road->GetId() != frontRoad);
+        ASSERT(road->CanStartFrom(frontCross->GetId()));
+        frontCross = road->GetPeerCross(frontCross);
     }
+    ASSERT(frontCross->GetId() == car->GetCar()->GetToCrossId());
+#endif
 
-    auto& carTrace = car->GetTrace();
-    if (car->GetIsInGarage())
-    {
-        carTrace.Clear();
-    }
-    else
-    {
-        carTrace.Clear(car->GetCurrentTraceIndex());
-    }
-    for (auto traceIte = pathListDiji.begin(); traceIte != pathListDiji.end(); traceIte++)
-    {
-        //ASSERT(carTrace.Size() == 0 || (*(carTrace.Tail() - 1) != *traceIte));
-        carTrace.AddToTail(*traceIte);
-    }
     return true;
 }

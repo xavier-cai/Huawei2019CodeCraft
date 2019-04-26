@@ -14,6 +14,7 @@ public:
 protected:
     virtual void DoInitialize(SimScenario& scenario) override;
     virtual void DoUpdate(int& time, SimScenario& scenario) override;
+    virtual void DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car) override;
 
 private:
     /* factor array */
@@ -25,6 +26,7 @@ private:
 
     int m_updateInterval;
     std::vector< std::vector<SimCar*> > m_carList;
+    //DeadLockSolver m_deadLockSolver;
 
     /* time weight */
     int m_carWeightStartTime;
@@ -35,13 +37,15 @@ private:
     std::vector< std::vector<double> > m_expectedWeight; //decide if need change trace
     std::vector< std::vector< std::pair< std::list<int>, int> > > m_bestTrace; //start -> end : trace & length
 
-    void InitilizeBestTraceByFloyd();
+    void InitializeBestTraceByFloyd();
+    void InitializeCarTraceByBeastTrace(SimScenario& scenario);
+    void InitializeCarTraceByDijkstra(SimScenario& scenario);
     bool IsAppropriateToDispatch(const int& time, SimCar* car) const;
 
-    void UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime);
-    void UpdateTimeWeightForEachCar(const int& time, SimCar* car);
+    void UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime, const bool& isDecrease);
+    void UpdateTimeWeightForEachCar(const int& time, SimCar* car, const bool& isDecrease = false);
     void UpdateCurrentWeightByScenario(const int& time, SimScenario& scenario);
-    bool UpdateCarTraceByDijkstraWithTimeWeight(const int& time, SimScenario& scenario, const std::vector<int>& validFirstHop, SimCar* car) const;
+    bool UpdateCarTraceByDijkstraWithTimeWeight(const int& time, SimScenario& scenario, SimCar* car, const std::vector<int>& banedFirstHop = std::vector<int>()) const;
 
 };
 
