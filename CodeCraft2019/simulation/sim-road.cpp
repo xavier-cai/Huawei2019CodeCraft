@@ -9,7 +9,7 @@ SimRoad::SimRoad()
 }
 
 SimRoad::SimRoad(Road* road)
-    : m_road(road)
+    : m_road(road), m_carN(0)
 {
     ASSERT(road != 0);
     m_carSize = road->GetLanes() * (road->GetIsTwoWay() ? 2 : 1);
@@ -22,11 +22,13 @@ void SimRoad::Reset()
 {
     for (int i = 0; i < m_carSize; ++i)
         m_cars[i].clear();
+    m_carN = 0;
 }
 
 void SimRoad::RunIn(Car* car, const int& lane, const bool& opposite)
 {
     GetCarsImpl(lane, opposite).push_back(car);
+    ++m_carN;
 }
 
 Car* SimRoad::RunOut(const int& lane, const bool& opposite)
@@ -35,5 +37,6 @@ Car* SimRoad::RunOut(const int& lane, const bool& opposite)
     ASSERT(cars.size() > 0);
     Car* ret = *cars.begin();
     cars.erase(cars.begin());
+    --m_carN;
     return ret;
 }

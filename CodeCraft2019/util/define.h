@@ -14,5 +14,6 @@
 
 static const int InfValue(0x3fffffff);
 #define Inf InfValue
+#define Is_Inf(v) (v > InfValue - 1)
 
 #endif

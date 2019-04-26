@@ -18,7 +18,7 @@
           # condition << "\", " << message  \
           << " file=" << __FILE__ << ", line=" <<    \
           __LINE__ << "\n";                     \
-          std::terminate();                     \
+          throw int(0);                     \
         }                                             \
     }                                                 \
   while (false)

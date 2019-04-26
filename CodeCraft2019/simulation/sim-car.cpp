@@ -196,6 +196,7 @@ std::pair<int, int> SimCar::CalculateLeaveTime(Road* current, Road* to, const in
         else
             ++time;
     }
+    ASSERT(time > 0);
     return std::make_pair(time, nextPosition);
 }
 

@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodeCraft-2019.cpp" />
+    <ClCompile Include="run-framework.cpp" />
     <ClCompile Include="scenario\car.cpp" />
     <ClCompile Include="scenario\config.cpp" />
     <ClCompile Include="scenario\cross.cpp" />
@@ -43,6 +44,7 @@
     <ClCompile Include="util\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="run-framework.h" />
     <ClInclude Include="scenario\car.h" />
     <ClInclude Include="scenario\config.h" />
     <ClInclude Include="scenario\cross.h" />

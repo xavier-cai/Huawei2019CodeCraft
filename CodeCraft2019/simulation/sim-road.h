@@ -12,6 +12,7 @@ class SimRoad
 private:
     Road* m_road;
     int m_carSize;
+    int m_carN;
     std::vector< std::vector<Car*> > m_cars; //lane -> car list
 
     /* implements */
@@ -28,6 +29,7 @@ public:
     inline Road* GetRoad() const;
 
     /* const interfaces */
+    inline const int& GetCarN() const;
     inline const std::vector<Car*>& GetCars(const int& lane) const; //lane : [1~number of lanes]
     inline const std::vector<Car*>& GetCarsOpposite(const int& lane) const;
     inline const std::vector<Car*>& GetCars(const int& lane, bool opposite) const; //opposite : [true] means end->start; [false] means start->end
@@ -54,6 +56,11 @@ public:
 inline Road* SimRoad::GetRoad() const
 {
     return m_road;
+}
+
+inline const int& SimRoad::GetCarN() const
+{
+    return m_carN;
 }
 
 inline const std::vector<Car*>& SimRoad::GetCarsImpl(const int& lane) const
