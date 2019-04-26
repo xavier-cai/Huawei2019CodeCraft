@@ -14,6 +14,7 @@ public:
 protected:
     virtual void DoInitialize(SimScenario& scenario) override;
     virtual void DoUpdate(int& time, SimScenario& scenario) override;
+    virtual void DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result) override;
     virtual void DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car) override;
 
 private:
@@ -26,7 +27,8 @@ private:
 
     int m_updateInterval;
     std::vector< std::vector<SimCar*> > m_carList;
-    //DeadLockSolver m_deadLockSolver;
+    DeadLockSolver m_deadLockSolver;
+    std::pair<int, bool> SelectBestRoad(SimScenario& scenario, const std::vector<int>& list, SimCar* car);
 
     /* time weight */
     int m_carWeightStartTime;

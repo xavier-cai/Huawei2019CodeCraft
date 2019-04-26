@@ -252,19 +252,19 @@ void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
     {
         SimCar* car = scenario.Cars()[i];
         if (car == 0) continue;
-        ASSERT(car->GetIsInGarage());
-        if (car->GetCar()->GetIsPreset())
+        if ((car->GetIsInGarage() && car->GetCar()->GetIsPreset())
+            || (!car->GetIsInGarage() && !car->GetIsReachedGoal()))
         {
-            Cross* cross = car->GetCar()->GetFromCross();
-            for (auto ite = car->GetTrace().Head(); ite != car->GetTrace().Tail(); ++ite)
+            Cross* cross = car->GetCurrentCross();
+            for (uint i = car->GetCurrentTraceIndex(); i < car->GetTrace().Size(); ++i)
             {
-                const Road* road = Scenario::Roads()[*ite];
+                const Road* road = Scenario::Roads()[car->GetTrace()[i]];
                 Cross* peer = road->GetPeerCross(cross);
-                dijkWeight[cross->GetId()][peer->GetId()] += 2.0;
+                dijkWeight[cross->GetId()][peer->GetId()] += car->GetCar()->GetIsPreset() ? 2.0 : 1.0;
                 cross = peer;
             }
         }
-        else
+        if (car->GetIsInGarage() && !car->GetCar()->GetIsPreset())
         {
             cars[car->GetCar()->GetFromCrossId()].push_back(car);
         }
@@ -274,6 +274,9 @@ void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
         std::sort(cars[i].begin(), cars[i].end(), CompareCarForDispatch);
 
     int notEndCount = Scenario::Crosses().size();
+    for (uint i = 0; i < Scenario::Crosses().size(); ++i)
+        if (cars[i].size() == 0)
+            --notEndCount;
     std::vector<int> indexInGarage;
     indexInGarage.resize(Scenario::Crosses().size(), 0);
     while (notEndCount > 0)
@@ -342,6 +345,7 @@ void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
         //crossListDiji.push_front(endCrossId);
 
         //check path valid
+        car->GetTrace().Clear();
         Cross* lastCross = car->GetCar()->GetFromCross();
         if (!car->GetIsInGarage())
             lastCross = car->GetCurrentCross();
@@ -376,6 +380,9 @@ void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
 {
     InitilizeConfidence();
 
+    m_deadLockSolver.Initialize(0, scenario);
+    m_deadLockSolver.SetSelectedRoadCallback(Callback::Create(&SchedulerTimeWeight::SelectBestRoad, this));
+
     int roadCount = Scenario::Roads().size();
     int crossCount = Scenario::Crosses().size();
     m_carWeight.resize(roadCount);
@@ -403,9 +410,10 @@ void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
     for (uint i = 0; i < crossCount; ++i)
         m_bestTrace[i].resize(crossCount);
 
-    InitializeBestTraceByFloyd();
+    //InitializeBestTraceByFloyd();
     //InitializeCarTraceByBeastTrace(scenario);
     //InitializeCarTraceByDijkstra(scenario);
+    return ;
     
 
     struct Statistic
@@ -449,8 +457,35 @@ void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
         LOG (Scenario::Roads()[statistic[i].Road]->GetOriginId() << " " << statistic[i].Dir << " " << statistic[i].Count);
 }
 
+std::pair<int, bool> SchedulerTimeWeight::SelectBestRoad(SimScenario& scenario, const std::vector<int>& list, SimCar* car)
+{
+    std::vector<int> baned;
+    Cross* cross = car->GetCurrentCross();
+    DirectionType_Foreach(dir,
+        Road* road = cross->GetRoad(dir);
+        if (road != 0 && road->CanStartFrom(cross->GetId()))
+        {
+            bool find = false;
+            for (auto ite = list.begin(); ite != list.end(); ++ite)
+                if (*ite == road->GetId())
+                    find = true;
+            if (!find)
+                baned.push_back(road->GetId());
+        }
+    );
+    auto ret = UpdateCarTraceByDijkstraWithTimeWeight(m_deadLockSolver.GetDeadLockTime(), scenario, car, baned);
+    ASSERT(ret);
+    return std::make_pair(1, true);
+}
+
 void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
 {
+    if (!m_deadLockSolver.NeedUpdate(time))
+        return;
+
+    if (time % 100 == 0)
+        InitializeCarTraceByDijkstra(scenario);
+
     if (time % m_updateInterval == 0)
     {
         m_carWeightStartTime = time;
@@ -464,12 +499,15 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
         }
     }
 
+    if (m_deadLockSolver.IsGarageLockedInBackup(time))
+        return;
+
     for (uint i = 0; i < scenario.Cars().size(); ++i)
     {
         SimCar* car = scenario.Cars()[i];
-        if (car->GetCar()->GetIsPreset() || !car->GetIsInGarage())
+        if (!car->GetIsReachedGoal() && (car->GetCar()->GetIsPreset() || !car->GetIsInGarage()))
             UpdateTimeWeightForEachCar(time, car);
-        else if (car->GetRealTime() <= time)
+        if (!car->GetCar()->GetIsPreset() && car->GetIsInGarage() && car->GetRealTime() <= time)
             m_carList[car->GetCar()->GetFromCrossId()].push_back(car);
     }
 
@@ -498,7 +536,6 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
             while (dispatchIndex[i] < m_carList[i].size()) //untill find a car which can be dispatch
             {
                 SimCar* car = m_carList[i][dispatchIndex[i]];
-                UpdateCarTraceByDijkstraWithTimeWeight(time, scenario, car);
                 if (IsAppropriateToDispatch(time, car))
                 {
                     UpdateTimeWeightForEachCar(time, car);
@@ -521,6 +558,24 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
                 }
                 ++dispatchIndex[i];
             }
+        }
+    }
+}
+
+void SchedulerTimeWeight::DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result)
+{
+    if (result.Conflict)
+    {
+        if (m_deadLockSolver.HandleDeadLock(time, scenario))
+        {
+            result.Conflict = false; //retry
+        }
+    }
+    else
+    {
+        if (time > 0 && time % 100 == 0)
+        {
+            m_deadLockSolver.Backup(time, scenario);
         }
     }
 }
