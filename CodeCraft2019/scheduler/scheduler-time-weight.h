@@ -44,6 +44,7 @@ private:
     void InitializeCarTraceByDijkstra(SimScenario& scenario);
     bool IsAppropriateToDispatch(const int& time, SimCar* car) const;
 
+    void UpdateTimeWeight(const int& time, SimScenario& scenario);
     void UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime, const bool& isDecrease);
     void UpdateTimeWeightForEachCar(const int& time, SimCar* car, const bool& isDecrease = false);
     void UpdateCurrentWeightByScenario(const int& time, SimScenario& scenario);

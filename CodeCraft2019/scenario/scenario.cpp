@@ -225,6 +225,11 @@ void Scenario::DoMoreInitialize()
 void Scenario::Initialize()
 {
     Instance.DoInitialize();
+    Reset();
+}
+
+void Scenario::Reset()
+{
     Tactics::Instance.Initialize();
     Instance.DoMoreInitialize();
 }

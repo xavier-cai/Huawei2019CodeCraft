@@ -483,20 +483,18 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
     if (!m_deadLockSolver.NeedUpdate(time))
         return;
 
-    if (time % 100 == 0)
+    static double updateTime = 1;
+    //if (time == 0 || --updateTime == 0)
+    if (time % 50 == 0)
+    {
         InitializeCarTraceByDijkstra(scenario);
+        updateTime = (double)(scenario.GetCarInGarageN() + scenario.GetOnRoadCarsN()) / (double)scenario.Cars().size() * 100.0;
+    }
+    
 
     if (time % m_updateInterval == 0)
     {
-        m_carWeightStartTime = time;
-        for (uint iTime = 0; iTime < m_maxValidRange; ++iTime)
-        {
-            for (uint iRoad = 0; iRoad < Scenario::Roads().size(); ++iRoad)
-            {
-                m_carWeight[iTime][iRoad].first = 0;
-                m_carWeight[iTime][iRoad].second = 0;
-            }
-        }
+        UpdateTimeWeight(time, scenario);
     }
 
     if (m_deadLockSolver.IsGarageLockedInBackup(time))
@@ -505,8 +503,6 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
     for (uint i = 0; i < scenario.Cars().size(); ++i)
     {
         SimCar* car = scenario.Cars()[i];
-        if (!car->GetIsReachedGoal() && (car->GetCar()->GetIsPreset() || !car->GetIsInGarage()))
-            UpdateTimeWeightForEachCar(time, car);
         if (!car->GetCar()->GetIsPreset() && car->GetIsInGarage() && car->GetRealTime() <= time)
             m_carList[car->GetCar()->GetFromCrossId()].push_back(car);
     }
@@ -582,6 +578,8 @@ void SchedulerTimeWeight::DoHandleResult(int& time, SimScenario& scenario, Simul
 
 void SchedulerTimeWeight::DoHandleBecomeFirstPriority(const int& time, SimScenario& scenario, SimCar* car)
 {
+    if (m_deadLockSolver.IsCarTraceLockedInBackup(car))
+        return;
     ASSERT(!car->GetIsLockOnNextRoad());
     SimRoad* nextRoad = scenario.Roads()[car->GetNextRoadId()];
     if (nextRoad->GetCarN() > m_roadCapacity[car->GetNextRoadId()] * 0.7)
@@ -615,10 +613,10 @@ bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) 
         {
             double weight = road->IsFromOrTo(cross->GetId()) ? m_carWeight[index][road->GetId()].first : m_carWeight[index][road->GetId()].second;
             double factor = weight / m_roadCapacity[road->GetId()];
-            if (factor > m_roadCapacity[road->GetId()] * 0.7)
-                return false;
-            if (factor > m_threshold[road->GetLanes()].second) //too crowed
-                return false;
+            //if (factor > m_roadCapacity[road->GetId()] * 0.7)
+            //    return false;
+            //if (factor > m_threshold[road->GetLanes()].second) //too crowed
+            //    return false;
             weightCount += weight * (factor > m_threshold[road->GetLanes()].first ? 1.0 : 0.5);
             if (weightCount / lengthCount > thresold) //too crowed
                 return false;
@@ -626,6 +624,25 @@ bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) 
         cross = road->GetPeerCross(cross);
     }
     return true;
+}
+
+void SchedulerTimeWeight::UpdateTimeWeight(const int& time, SimScenario& scenario)
+{
+    m_carWeightStartTime = time;
+    for (uint iTime = 0; iTime < m_maxValidRange; ++iTime)
+    {
+        for (uint iRoad = 0; iRoad < Scenario::Roads().size(); ++iRoad)
+        {
+            m_carWeight[iTime][iRoad].first = 0;
+            m_carWeight[iTime][iRoad].second = 0;
+        }
+    }
+    for (uint i = 0; i < scenario.Cars().size(); ++i)
+    {
+        SimCar* car = scenario.Cars()[i];
+        if (!car->GetIsReachedGoal() && ((car->GetCar()->GetIsPreset() && !car->GetIsForceOutput()) || !car->GetIsInGarage()))
+            UpdateTimeWeightForEachCar(time, car);
+    }
 }
 
 void SchedulerTimeWeight::UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime, const bool& isDecrease)
@@ -673,7 +690,7 @@ void SchedulerTimeWeight::UpdateTimeWeightForEachCar(const int& originTime, SimC
     uint iTrace = car->GetCurrentTraceIndex();
     if (!car->GetIsInGarage())
     {
-        eventTime = car->GetSimState(time) == SimCar::SCHEDULED ? time + 1 : time;
+        eventTime = car->GetSimState(originTime) == SimCar::SCHEDULED ? time + 1 : time;
         pos = car->GetCurrentPosition();
         --iTrace;
         cross = car->GetCurrentRoad()->GetPeerCross(cross);

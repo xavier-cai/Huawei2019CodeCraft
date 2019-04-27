@@ -26,7 +26,7 @@ public:
     void SetIsVipCarDispatchFree(bool v);
     void SetVipCarOptimalStartTime(int v);
     void HandleSimCarScheduled(const SimCar* car);
-
+    void SetLooserCarsNumOnRoadLimit(int v);
 protected:
     virtual void DoInitialize(SimScenario& scenario) override;
     virtual void DoUpdate(int& time, SimScenario& scenario) override;
@@ -81,6 +81,7 @@ private:
     double m_carLimitLooser;
     double m_carLimitTighter;
     double m_presetVipTracePreloadWeight;
+    int m_looserCarsNumOnRoadLimit;
     int m_lastVipCarRealTime;
     int m_lastPresetVipCarEstimateArriveTime;
     int m_vipCarOptimalStartTime;

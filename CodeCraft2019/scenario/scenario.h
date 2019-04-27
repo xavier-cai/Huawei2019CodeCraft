@@ -42,6 +42,7 @@ public:
     ~Scenario();
     
     static void Initialize();
+    static void Reset();
     inline static const std::vector<Car*>& Cars();
     inline static const std::vector<Cross*>& Crosses();
     inline static const std::vector<Road*>& Roads();

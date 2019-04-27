@@ -26,6 +26,10 @@ private:
 
     //variables of implements
     bool m_isStableOutputed;
+
+    /* arguments for floyd */
+    int m_floydLengthWeight;
+    int m_floydLooserCarsNumOnRoadLimit;
 };
 
 #endif

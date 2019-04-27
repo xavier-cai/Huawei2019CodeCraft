@@ -8,19 +8,14 @@
 #include "sim-scenario.h"
 
 RunFramework::RunFramework()
-    : m_maxTime(900), m_safeInterval(100), m_bestAnswer(-1)
+    : m_maxTime(400), m_safeInterval(100), m_bestAnswer(-1)
     , m_isStableOutputed(false)
+    , m_floydLengthWeight(1.0), m_floydLooserCarsNumOnRoadLimit(0)
 { }
 
 bool RunFramework::IsNoMoreTime() const
 {
     return Timer::GetLeftTime(m_maxTime) < m_safeInterval;
-}
-
-bool RunFramework::HandleTerminateAssert()
-{
-    LOG("assert detected programing running time : " << Timer::GetSpendTime());
-    return false;
 }
 
 void RunFramework::Run(int argc, char* argv[])
@@ -54,7 +49,7 @@ void RunFramework::Run(int argc, char* argv[])
 
 void RunFramework::RunImpl(Scheduler* scheduler)
 {
-    ASSERT(false);
+    Scenario::Reset();
     SimScenario scenario;
     Simulator::Instance.SetScheduler(scheduler);
     scheduler->Initialize(scenario);
@@ -88,6 +83,7 @@ void RunFramework::RunImpl(Scheduler* scheduler)
     int answer = ScoreCalculator::Calculate(scenario).Score;
     if(m_bestAnswer < 0 || answer < m_bestAnswer)
     {
+        LOG("better answer : " << answer);
         scenario.SaveToFile();
         m_bestAnswer = answer;
     }
@@ -95,12 +91,25 @@ void RunFramework::RunImpl(Scheduler* scheduler)
 
 #include "scheduler-floyd.h"
 
+bool RunFramework::HandleTerminateAssert()
+{
+    LOG("assert detected programing running time : " << Timer::GetSpendTime());
+    if (m_floydLengthWeight > 0.2)
+    {
+        m_floydLengthWeight -= 0.2;
+        return true;
+    }
+    return false;
+}
+
 void RunFramework::RunStableVersion()
 {
+    m_isStableOutputed = true;
+    return;
     SchedulerFloyd scheduler;
-    scheduler.SetLengthWeight(1.6);
+    scheduler.SetLengthWeight(m_floydLengthWeight);
     scheduler.SetIsDropBackByDijkstra(false);
-    scheduler.SetIsEnableVipWeight(true);
+    scheduler.SetIsEnableVipWeight(false);
     scheduler.SetIsFasterAtEndStep(true);
     scheduler.SetIsLessCarAfterDeadLock(false);
     scheduler.SetIsLimitedByRoadSizeCount(true);
@@ -113,5 +122,19 @@ void RunFramework::RunStableVersion()
 
 void RunFramework::RunFindABetterAnswer()
 {
-
+    for (int i = m_floydLooserCarsNumOnRoadLimit; !IsNoMoreTime(); i += 1000)
+    {
+        SchedulerFloyd scheduler;
+        scheduler.SetLengthWeight(m_floydLengthWeight);
+        scheduler.SetIsDropBackByDijkstra(false);
+        scheduler.SetIsEnableVipWeight(false);
+        scheduler.SetIsFasterAtEndStep(true);
+        scheduler.SetIsLessCarAfterDeadLock(false);
+        scheduler.SetIsLimitedByRoadSizeCount(true);
+        scheduler.SetIsOptimalForLastVipCar(true);
+        scheduler.SetIsVipCarDispatchFree(false);
+        scheduler.SetPresetVipTracePreloadWeight(0.3);
+		scheduler.SetLooserCarsNumOnRoadLimit(i);
+        RunImpl(&scheduler);
+    }
 }

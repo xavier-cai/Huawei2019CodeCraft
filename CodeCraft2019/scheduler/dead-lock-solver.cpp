@@ -293,12 +293,15 @@ int DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
         m_deadLockTime = time;
     }
 
+    m_firstLockOnTime = -1;
     //remember the trace
     for(uint i = 0; i < scenario.Cars().size(); ++i)
     {
         SimCar* car = scenario.Cars()[i];
         if (car == 0) continue;
         m_deadLockTraceIndexes[i] = car->GetCurrentTraceIndex();
+        if (car->GetIsLockOnNextRoad() && !car->GetIsInGarage() && !car->GetIsReachedGoal())
+            UpdateFirstLockOnTime(car->GetLockOnNextRoadTime());
     }
 
     auto cars = Simulator::Instance.GetDeadLockCars(time, scenario);
@@ -311,7 +314,6 @@ int DeadLockSolver::DoHandleDeadLock(int& time, SimScenario& scenario)
 
     //start solving the dead lock
     bool result = false;
-    m_firstLockOnTime = -1;
     for (auto ite = handles.begin(); ite != handles.end(); ++ite)
     {
         if ((this->**ite)(time, scenario, cars))
