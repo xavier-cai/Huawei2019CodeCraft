@@ -22,7 +22,6 @@
     <ClCompile Include="scheduler\garage-counter.cpp" />
     <ClCompile Include="scheduler\load-state.cpp" />
     <ClCompile Include="scheduler\scheduler-answer.cpp" />
-    <ClCompile Include="scheduler\scheduler-dijkstra.cpp" />
     <ClCompile Include="scheduler\scheduler-floyd.cpp" />
     <ClCompile Include="scheduler\scheduler-time-weight.cpp" />
     <ClCompile Include="scheduler\scheduler.cpp" />
@@ -54,7 +53,6 @@
     <ClInclude Include="scheduler\garage-counter.h" />
     <ClInclude Include="scheduler\load-state.h" />
     <ClInclude Include="scheduler\scheduler-answer.h" />
-    <ClInclude Include="scheduler\scheduler-dijkstra.h" />
     <ClInclude Include="scheduler\scheduler-floyd.h" />
     <ClInclude Include="scheduler\scheduler-time-weight.h" />
     <ClInclude Include="scheduler\scheduler.h" />

@@ -31,7 +31,8 @@ private:
     int m_lockOnNextRoadTime;
     bool m_isIgnored; //special state flag for debugging, which means it will not be updated, then cause simulation run into a dead loop
     int m_startTime; //the time go on the first road
-    bool m_isForceOutput;
+    bool m_canChangePath;
+    bool m_canChangeRealTime;
     int m_calculateTimeCache;
     int m_calculateTimeToken;
     
@@ -62,7 +63,8 @@ public:
     void Reset();
     void SetScenario(SimScenario* scenario);
     void SetIsIgnored(const bool& ignored);
-    void SetIsForceOutput(const bool& forceOutput);
+    void SetCanChangePath(const bool& can);
+    void SetCanChangeRealTime(const bool& can);
 
     inline Car* GetCar() const;
     inline void SetRealTime(int realTime);
@@ -77,6 +79,8 @@ public:
     inline const bool& GetIsIgnored() const;
     inline const int& GetStartTime() const;
     inline const bool& GetIsForceOutput() const;
+    inline const bool& GetCanChangePath() const;
+    inline const bool& GetCanChangeRealTime() const;
     
     inline int GetNextRoadId() const; //-1 means reaching end cross
     inline int GetLastUpdateTime() const;
@@ -127,7 +131,7 @@ inline Car* SimCar::GetCar() const
 
 inline void SimCar::SetRealTime(int realTime)
 {
-    ASSERT(!m_car->GetIsPreset());
+    ASSERT(!m_car->GetIsPreset() || m_canChangeRealTime);
     ASSERT(realTime >= m_car->GetPlanTime());
     *m_realTime = realTime;
 }
@@ -184,9 +188,14 @@ inline const int& SimCar::GetStartTime() const
     return m_startTime;
 }
 
-inline const bool& SimCar::GetIsForceOutput() const
+inline const bool& SimCar::GetCanChangePath() const
 {
-    return m_isForceOutput;
+    return m_canChangePath;
+}
+
+inline const bool& SimCar::GetCanChangeRealTime() const
+{
+    return m_canChangeRealTime;
 }
 
 inline int SimCar::GetNextRoadId() const

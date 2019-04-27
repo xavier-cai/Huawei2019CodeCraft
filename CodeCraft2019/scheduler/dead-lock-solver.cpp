@@ -122,20 +122,6 @@ bool DeadLockSolver::OperationDelay(const int& time, SimScenario& scenario, std:
 
 bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario, std::list<SimCar*>& cars)
 {
-    int presetCarNInDeadLockCars = 0;
-    for (auto ite = cars.begin(); ite != cars.end(); )
-    {
-        SimCar* car = *ite;
-        if (car->GetCurrentCross() == car->GetCar()->GetToCross())
-        {
-            ite = cars.erase(ite);
-            continue;
-        }
-        else if (car->GetCar()->GetIsPreset() && !car->GetIsForceOutput())
-            ++presetCarNInDeadLockCars;
-        ++ite;
-    }
-
     double operatorFactor = 0.8;
     int operatorCounter = std::max(1, (int)(cars.size() * operatorFactor));
     int operatorCounterMax = operatorCounter;
@@ -183,15 +169,15 @@ bool DeadLockSolver::OperationChangeTrace(const int& time, SimScenario& scenario
                 bool pushTrace = true;
                 if (selections.size() > 0)
                 {
-                    if (car->GetCar()->GetIsPreset() && !(*ite)->GetIsForceOutput())
+                    if (car->GetCar()->GetIsPreset() && !(*ite)->GetCanChangePath())
                     {
                         if (m_canChangedPresetN > 0) //change preset trace
                         {
                             --m_canChangedPresetN;
                             LOG("change car " << *(car->GetCar()) << " to force output car, left chances " << m_canChangedPresetN);
-                            car->SetIsForceOutput(true);
+                            car->SetCanChangePath(true);
                             for (auto iteBackup = m_backups.begin(); iteBackup != m_backups.end(); ++iteBackup)
-                                iteBackup->second->Cars()[car->GetCar()->GetId()]->SetIsForceOutput(true);
+                                iteBackup->second->Cars()[car->GetCar()->GetId()]->SetCanChangePath(true);
                         }
                         else
                         {

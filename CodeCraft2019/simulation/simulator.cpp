@@ -432,7 +432,7 @@ bool Simulator::GetCarOutFromGarage(const int& time, SimScenario& scenario, SimC
         car->UpdateOnRoad(time, road->GetRoad(), canGoout.first, isFromOrTo, canGoout.second);
         road->RunIn(car->GetCar(), canGoout.first, !isFromOrTo);
     }
-    if (canGoout.first >= 0 && canGoout.second >= 0 && !car->GetCar()->GetIsPreset() && m_isEnableCheater)
+    if (canGoout.first >= 0 && canGoout.second >= 0 && (!car->GetCar()->GetIsPreset() || car->GetCanChangeRealTime()) && m_isEnableCheater)
         car->SetRealTime(time + (goout ? 0 : 1));
     return goout;
 }
@@ -463,7 +463,7 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
             SimCar* car = cangoCars[iIndex];
             int oriTime = car->GetRealTime();
             if (m_scheduler != 0
-                && (!car->GetCar()->GetIsPreset() || car->GetIsForceOutput())
+                && (!car->GetCar()->GetIsPreset() || car->GetCanChangePath() || car->GetCanChangeRealTime())
                 && !car->GetCar()->GetIsVip()) //vip car is not expect get out in function
                 m_scheduler->HandleGetoutGarage(time, scenario, car);
             ASSERT(car->GetRealTime() == oriTime || car->GetRealTime() > time);
@@ -475,7 +475,7 @@ void Simulator::GetOutFromGarage(const int& time, SimScenario& scenario) const
             ASSERT(!goout || !car->GetCar()->GetIsVip()); //vip car is not expect get out in function
             if (!goout)
             {
-                if (car->GetCar()->GetIsPreset() && !car->GetIsLockOnNextRoad())
+                if (car->GetCar()->GetIsPreset() && !car->GetCanChangeRealTime() && !car->GetIsLockOnNextRoad())
                     car->LockOnNextRoad(time);
                 car->UpdateStayInGarage(time);
             }
@@ -530,7 +530,7 @@ void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, cons
             if (!car->GetIsInGarage() || car->GetRealTime() > time) continue;
             int oldTime = car->GetRealTime();
             if (m_scheduler != 0
-                && (!car->GetCar()->GetIsPreset() || car->GetIsForceOutput()))
+                && (!car->GetCar()->GetIsPreset() || car->GetCanChangePath() || car->GetCanChangeRealTime()))
                 m_scheduler->HandleGetoutGarage(time, scenario, car);
             if (car->GetRealTime() <= time)
             {
@@ -541,7 +541,7 @@ void Simulator::GetVipOutFromGarage(const int& time, SimScenario& scenario, cons
                     bool goout = GetCarOutFromGarage(time, scenario, car);
                     if (!goout)
                     {
-                        if (car->GetCar()->GetIsPreset() && !car->GetIsLockOnNextRoad())
+                        if (car->GetCar()->GetIsPreset() && !car->GetCanChangeRealTime() && !car->GetIsLockOnNextRoad())
                             car->LockOnNextRoad(time);
                         car->UpdateStayInGarage(time);
                     }
