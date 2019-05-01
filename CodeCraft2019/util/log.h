@@ -4,23 +4,23 @@
 #define LOG_ON
 
 #if defined(__linux__)
-	#include <cxxabi.h>
+    #include <cxxabi.h>
 #else
     #include <string.h>
     #include <stdlib.h>
-	class abi
-	{
-	public:
-		virtual ~abi() = 0;
-		static const char* __cxa_demangle(const char* str, void* p1, void* p2, void* p3)
-		{
+    class abi
+    {
+    public:
+        virtual ~abi() = 0;
+        static const char* __cxa_demangle(const char* str, void* p1, void* p2, void* p3)
+        {
             auto size = strlen(str);
             char* ret = (char*)malloc(size + 1);
             strncpy(ret, str, size);
             ret[size] = 0;
-			return ret;
-		}
-	};
+            return ret;
+        }
+    };
 #endif //#if defined(__linux__)
 
 #include <iostream>

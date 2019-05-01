@@ -8,7 +8,7 @@
 #include "sim-scenario.h"
 
 RunFramework::RunFramework()
-    : m_maxTime(400), m_safeInterval(100), m_bestAnswer(-1)
+    : m_maxTime(900), m_safeInterval(100), m_bestAnswer(-1)
     , m_isStableOutputed(false)
     , m_floydLengthWeight(1.0), m_floydLooserCarsNumOnRoadLimit(0)
 { }
@@ -33,7 +33,7 @@ void RunFramework::Run(int argc, char* argv[])
             //first step : run the stable version
             if (!m_isStableOutputed)
                 RunStableVersion();
-            //second step : find a more good answer
+            //second step : find a better answer
             RunFindABetterAnswer();
         }
         catch(...)
@@ -54,8 +54,8 @@ void RunFramework::RunImpl(Scheduler* scheduler)
     Simulator::Instance.SetScheduler(scheduler);
     scheduler->Initialize(scenario);
     int time = 0;
-	for(; true; ++time) //forever until complete!
-	{
+    for(; true; ++time) //forever until complete!
+    {
         scheduler->Update(time, scenario);
         Simulator::UpdateResult result;
         if (false)
@@ -72,13 +72,13 @@ void RunFramework::RunImpl(Scheduler* scheduler)
         scheduler->HandleResult(time, scenario, result);
         if (time != oldTime)
             LOG ("time back to " << time << " from " << oldTime << " " << Timer::GetSpendTime());
-	    if (result.Conflict)
+        if (result.Conflict)
             return;
-	    if (scenario.IsComplete())
-	        break;
+        if (scenario.IsComplete())
+            break;
         if (IsNoMoreTime())
             return;
-	}
+    }
     LOG("Program execute time : " << Timer::GetSpendTime() << "s");
     int answer = ScoreCalculator::Calculate(scenario).Score;
     if(m_bestAnswer < 0 || answer < m_bestAnswer)
@@ -134,7 +134,7 @@ void RunFramework::RunFindABetterAnswer()
         scheduler.SetIsOptimalForLastVipCar(true);
         scheduler.SetIsVipCarDispatchFree(false);
         scheduler.SetPresetVipTracePreloadWeight(0.3);
-		scheduler.SetLooserCarsNumOnRoadLimit(i);
+        scheduler.SetLooserCarsNumOnRoadLimit(i);
         RunImpl(&scheduler);
     }
 }

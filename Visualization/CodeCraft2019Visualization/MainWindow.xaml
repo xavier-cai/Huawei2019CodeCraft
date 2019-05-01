@@ -1,0 +1,57 @@
+﻿<Window x:Class="CodeCraft2019Visualization.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CodeCraft2019Visualization"
+        mc:Ignorable="d"
+        Title="CodeCraft 2019 Visualization" MinWidth="840" MinHeight="500" Height="500" Width="840" Loaded="WindowLoaded" Closed="WindowClosed" MouseWheel="WindowMouseWheel" WindowStartupLocation="CenterScreen" KeyDown="WindowKeyDown" >
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="  &lt;  " Margin="5,3" Click="ButtonLeftClick" Focusable="False"/>
+            <Button Grid.Column="1" Content="  &gt;  " Margin="5,3" Click="ButtonRightClick" Focusable="False"/>
+            <Label Grid.Column="2" Name="ctlIndexLabel" Margin="5, 0"/>
+            <Button Grid.Column="3" Content="Play/Pause" Margin="5,3" Click="ButtonPlayPauseClick" Focusable="False"/>
+            <TextBox Grid.Column="4" Name="ctlTextInterval" Width="50" Text="0.5" TextAlignment="Center" VerticalAlignment="Center" />
+            <Label Grid.Column="5" Content="Jump:" Margin="20,3,0,3" />
+            <TextBox Grid.Column="6" Name="ctlTextJump"  Margin="0,0,1,0" Width="40" Text="1" TextAlignment="Center" VerticalAlignment="Center" />
+            <Button Grid.Column="7" Content=" Chip " Margin="2,3" Click="ButtonJumpChipClick" Focusable="False" />
+            <Button Grid.Column="8" Content="Cross" Margin="2,3" Click="ButtonJumpCrossClick" Focusable="False" />
+            <Button Grid.Column="9" Content="Road" Margin="2,3" Click="ButtonJumpRoadClick" Focusable="False" />
+            <Button Grid.Column="10" Content="Reset View" Margin="20,3" Click="ButtonResetViewClick" Focusable="False"/>
+            <Label Grid.Column="11"/>
+            <Label Grid.Column="12" Name="ctlLabel"/>
+            <Button Grid.Column="13" Content=" ! " Margin="5,3" Click="ButtonDisposeClick" Focusable="False" />
+        </Grid>
+        <Border Name="ctlImageContainer" Grid.Row="1" Margin="3, 3" BorderBrush="Gray" BorderThickness="1" ClipToBounds="True">
+            <Image Name="ctlImage"  Width="Auto" Height="Auto" MouseLeftButtonDown="ImageMouseLeftButtonDown" MouseLeftButtonUp="ImageMouseLeftButtonUp" MouseMove="ImageMouseMove" Focusable="True">
+                <Image.RenderTransform>
+                    <TransformGroup>
+                        <TranslateTransform/>
+                        <ScaleTransform/>
+                    </TransformGroup>
+                </Image.RenderTransform>
+            </Image>
+        </Border>
+    </Grid>
+</Window>

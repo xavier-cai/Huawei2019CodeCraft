@@ -10,6 +10,28 @@
 std::vector< std::vector< std::vector<double> > > SchedulerTimeWeight::m_collectionWeight;
 int SchedulerTimeWeight::m_maxValidRange;
 
+double firstThreshold = 0.2;
+double secondThreshold = 0.7;
+double crowedThreshold = 0.7;
+double dispatchThreshold = 0.6;
+
+int leftCarsN = -1;
+int maxServiceCarsN = 0;
+
+inline double WbaToLengthWeight(double wba, const int& capacity)
+{
+    double factor = wba / capacity;
+    if (factor < 0.2) wba = 0;
+    else if (factor > 0.7) wba *= 4;
+    return wba;
+}
+
+inline double AdaptToLeftCarsN(const double& min, const double& max)
+{
+    ASSERT(leftCarsN > 0);
+    return max - pow(leftCarsN * 1.0 / Scenario::Cars().size(), 2) * (max - min);
+}
+
 void SchedulerTimeWeight::InitilizeConfidence()
 {
     static bool initialized = false;
@@ -86,6 +108,8 @@ void SchedulerTimeWeight::InitilizeConfidence()
     }
 }
 
+int CompareToken = 0;
+
 struct CompareCarForDispatchStruct
 {
     bool operator () (SimCar* a, SimCar* b)
@@ -98,6 +122,8 @@ struct CompareCarForDispatchStruct
             return ac->GetMaxSpeed() < bc->GetMaxSpeed();
         if (a->GetRealTime() != b->GetRealTime())
             return a->GetRealTime() < b->GetRealTime();
+        if (a->CalculateSpendTime(CompareToken) != b->CalculateSpendTime(CompareToken))
+            return a->CalculateSpendTime(CompareToken) > b->CalculateSpendTime(CompareToken);
         return ac->GetId() < bc->GetId();
     }
 
@@ -260,7 +286,7 @@ void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
             {
                 const Road* road = Scenario::Roads()[car->GetTrace()[i]];
                 Cross* peer = road->GetPeerCross(cross);
-                dijkWeight[cross->GetId()][peer->GetId()] += car->GetCar()->GetIsPreset() ? 2.0 : 1.0;
+                dijkWeight[cross->GetId()][peer->GetId()] += 1.0; //car->GetCar()->GetIsPreset() ? 2.0 : 1.0;
                 cross = peer;
             }
         }
@@ -363,7 +389,7 @@ void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
                     {
                         consistant = true;
                         car->GetTrace().AddToTail(road->GetId());
-                        dijkWeight[lastCross->GetId()][thisCross->GetId()] += 1.2 / sqrt(road->GetLanes());
+                        dijkWeight[lastCross->GetId()][thisCross->GetId()] += 1.5 / sqrt(road->GetLanes());
                         break;
                     }
                 }
@@ -379,6 +405,7 @@ void SchedulerTimeWeight::InitializeCarTraceByDijkstra(SimScenario& scenario)
 void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
 {
     InitilizeConfidence();
+    maxServiceCarsN = 0;
 
     m_deadLockSolver.Initialize(0, scenario);
     m_deadLockSolver.SetSelectedRoadCallback(Callback::Create(&SchedulerTimeWeight::SelectBestRoad, this));
@@ -403,8 +430,8 @@ void SchedulerTimeWeight::DoInitialize(SimScenario& scenario)
     m_threshold.resize(maxLanes + 1, std::make_pair(0.0, 0.0));
     for (int i = 1; i < maxLanes; ++i)
     {
-        m_threshold[i].first = 0.2 / sqrt(i);
-        m_threshold[i].second = 0.8 / sqrt(i);
+        m_threshold[i].first = firstThreshold / sqrt(i);
+        m_threshold[i].second = secondThreshold / sqrt(i);
     }
 
     for (uint i = 0; i < crossCount; ++i)
@@ -480,12 +507,14 @@ std::pair<int, bool> SchedulerTimeWeight::SelectBestRoad(SimScenario& scenario, 
 
 void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
 {
+    leftCarsN = scenario.Cars().size() - scenario.GetReachCarsN();
+
     if (!m_deadLockSolver.NeedUpdate(time))
         return;
 
     static double updateTime = 1;
     //if (time == 0 || --updateTime == 0)
-    if (time % 50 == 0)
+    if (time % 50 == 0 || scenario.GetCarInGarageN() < maxServiceCarsN * 0.75)
     {
         InitializeCarTraceByDijkstra(scenario);
         updateTime = (double)(scenario.GetCarInGarageN() + scenario.GetOnRoadCarsN()) / (double)scenario.Cars().size() * 100.0;
@@ -507,6 +536,7 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
             m_carList[car->GetCar()->GetFromCrossId()].push_back(car);
     }
 
+    CompareToken = time;
     for (uint i = 0; i < m_carList.size(); ++i)
         std::sort(m_carList[i].begin(), m_carList[i].end(), CompareCarForDispatch);
 
@@ -532,7 +562,7 @@ void SchedulerTimeWeight::DoUpdate(int& time, SimScenario& scenario)
             while (dispatchIndex[i] < m_carList[i].size()) //untill find a car which can be dispatch
             {
                 SimCar* car = m_carList[i][dispatchIndex[i]];
-                if (IsAppropriateToDispatch(time, car))
+                if (IsAppropriateToDispatch(time, car, scenario))
                 {
                     UpdateTimeWeightForEachCar(time, car);
                     tryCounter[i] = 0;
@@ -569,6 +599,7 @@ void SchedulerTimeWeight::DoHandleResult(int& time, SimScenario& scenario, Simul
     }
     else
     {
+        maxServiceCarsN = std::max(maxServiceCarsN, scenario.GetOnRoadCarsN());
         if (time > 0 && time % 100 == 0)
         {
             m_deadLockSolver.Backup(time, scenario);
@@ -582,7 +613,7 @@ void SchedulerTimeWeight::DoHandleBecomeFirstPriority(const int& time, SimScenar
         return;
     ASSERT(!car->GetIsLockOnNextRoad());
     SimRoad* nextRoad = scenario.Roads()[car->GetNextRoadId()];
-    if (nextRoad->GetCarN() > m_roadCapacity[car->GetNextRoadId()] * 0.7)
+    if (nextRoad->GetCarN() > m_roadCapacity[car->GetNextRoadId()] * AdaptToLeftCarsN(m_threshold[nextRoad->GetRoad()->GetLanes()].second, 0.9))
     {
         //need reset the trace
         UpdateTimeWeightForEachCar(time, car, true); //decrease
@@ -593,10 +624,11 @@ void SchedulerTimeWeight::DoHandleBecomeFirstPriority(const int& time, SimScenar
     }
 }
 
-bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) const
+bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car, SimScenario& scenario) const
 {
     ASSERT(car->GetIsInGarage());
-    static const double thresold = 0.6;
+    if (scenario.GetCarInGarageN() + scenario.GetOnRoadCarsN() < maxServiceCarsN * 0.9)
+        return true;
     int lengthCount = 0;
     double weightCount = 0;
     int pos = 0;
@@ -613,12 +645,12 @@ bool SchedulerTimeWeight::IsAppropriateToDispatch(const int& time, SimCar* car) 
         {
             double weight = road->IsFromOrTo(cross->GetId()) ? m_carWeight[index][road->GetId()].first : m_carWeight[index][road->GetId()].second;
             double factor = weight / m_roadCapacity[road->GetId()];
-            //if (factor > m_roadCapacity[road->GetId()] * 0.7)
-            //    return false;
-            //if (factor > m_threshold[road->GetLanes()].second) //too crowed
-            //    return false;
-            weightCount += weight * (factor > m_threshold[road->GetLanes()].first ? 1.0 : 0.5);
-            if (weightCount / lengthCount > thresold) //too crowed
+            if (factor > m_roadCapacity[road->GetId()] * AdaptToLeftCarsN(crowedThreshold, 0.9))
+                return false;
+            if (factor > AdaptToLeftCarsN(m_threshold[road->GetLanes()].second, 0.9)) //too crowed
+                return false;
+            weightCount += weight * (factor > AdaptToLeftCarsN(m_threshold[road->GetLanes()].first, 0.5) ? 1.0 : 0.5);
+            if (weightCount / lengthCount > AdaptToLeftCarsN(dispatchThreshold, 0.9)) //too crowed
                 return false;
         }
         cross = road->GetPeerCross(cross);
@@ -640,7 +672,7 @@ void SchedulerTimeWeight::UpdateTimeWeight(const int& time, SimScenario& scenari
     for (uint i = 0; i < scenario.Cars().size(); ++i)
     {
         SimCar* car = scenario.Cars()[i];
-        if (!car->GetIsReachedGoal() && ((car->GetCar()->GetIsPreset() && !car->GetIsForceOutput()) || !car->GetIsInGarage()))
+        if (!car->GetIsReachedGoal() && ((car->GetCar()->GetIsPreset() && !car->GetCanChangePath()) || !car->GetIsInGarage()))
             UpdateTimeWeightForEachCar(time, car);
     }
 }
@@ -729,14 +761,6 @@ void SchedulerTimeWeight::UpdateCurrentWeightByScenario(const int& time, SimScen
                 weight += road->GetCars(iLane, dir == 1).size();
         }
     }
-}
-
-inline double WbaToLengthWeight(double wba, const int& capacity)
-{
-    double factor = wba / capacity;
-    if (factor < 0.2) wba = 0;
-    else if (factor > 0.7) wba *= 4;
-    return wba;
 }
 
 bool SchedulerTimeWeight::UpdateCarTraceByDijkstraWithTimeWeight(const int& time, SimScenario& scenario, SimCar* car, const std::vector<int>& banedFirstHop) const

@@ -78,7 +78,6 @@ public:
     inline const int& GetLockOnNextRoadTime() const;
     inline const bool& GetIsIgnored() const;
     inline const int& GetStartTime() const;
-    inline const bool& GetIsForceOutput() const;
     inline const bool& GetCanChangePath() const;
     inline const bool& GetCanChangeRealTime() const;
     

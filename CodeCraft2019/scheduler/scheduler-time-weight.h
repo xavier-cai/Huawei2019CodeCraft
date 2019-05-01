@@ -42,7 +42,7 @@ private:
     void InitializeBestTraceByFloyd();
     void InitializeCarTraceByBeastTrace(SimScenario& scenario);
     void InitializeCarTraceByDijkstra(SimScenario& scenario);
-    bool IsAppropriateToDispatch(const int& time, SimCar* car) const;
+    bool IsAppropriateToDispatch(const int& time, SimCar* car, SimScenario& scenario) const;
 
     void UpdateTimeWeight(const int& time, SimScenario& scenario);
     void UpdateTimeWeightByRoadAndTime(const int& time, const int& roadId, const bool& dir, int startTime, int leaveTime, const bool& isDecrease);

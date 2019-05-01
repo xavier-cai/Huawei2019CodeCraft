@@ -214,6 +214,7 @@ int SimCar::CalculateSpendTime(bool useCache)
         m_calculateTimeCache = 0;
 
         int pos = 0;
+        //ASSERT(m_trace->Size() > 0);
         for (uint iTrace = 0; iTrace < m_trace->Size(); ++iTrace)
         {
             Road* road = Scenario::Roads()[(*m_trace)[iTrace]];
@@ -224,7 +225,9 @@ int SimCar::CalculateSpendTime(bool useCache)
             pos = next.second;
         }
     }
-    ASSERT(m_calculateTimeCache > 0);
+    if (m_calculateTimeCache <= 0)
+        m_calculateTimeCache = -1;
+    //ASSERT(m_calculateTimeCache > 0);
     return m_calculateTimeCache;
 }
 

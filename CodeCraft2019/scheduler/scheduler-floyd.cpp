@@ -138,7 +138,7 @@ void SchedulerFloyd::HandlePresetCars(SimScenario& scenario, const int& canChang
     //wsq test
     for (int i = 0; i < canChangesN; ++i)
     {
-        presetVipCars[i]->SetIsForceOutput(true);
+        presetVipCars[i]->SetCanChangePath(true);
     }
 }
 
@@ -230,7 +230,6 @@ void SchedulerFloyd::HandleSimCarScheduled(const SimCar* car)
 
 void SchedulerFloyd::DoInitialize(SimScenario& scenario)
 {
-    std::cout << m_looserCarsNumOnRoadLimit << std::endl;
     int canChangesN = Scenario::GetPresetCarsN() * 0.1;
     int forDeadLockSolver = canChangesN * 0.5;
     HandlePresetCars(scenario, canChangesN - forDeadLockSolver);
@@ -346,7 +345,7 @@ void SchedulerFloyd::DoHandleBecomeFirstPriority(const int& time, SimScenario& s
 
 void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
 {
-    //m_appointOnRoadCounter单时间片更新
+    //m_appointOnRoadCounter
     if (!m_deadLockSolver.NeedUpdate(time))
     {
         m_garageDispatchCounter.Update(time, scenario);
@@ -406,7 +405,7 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
                 if (car == 0) continue;
                 if (car->GetIsReachedGoal()) continue;
                 //time >= m_lastPresetVipCarRealTime - 50 && 
-                if (car->GetCar()->GetIsVip() && ((car->GetCar()->GetIsPreset() && !car->GetIsForceOutput() && time >= car->GetRealTime() - 50)))// || (time >= m_lastPresetVipCarEstimateArriveTime && !car->GetCar()->GetIsPreset() && !car->GetIsInGarage())))
+                if (car->GetCar()->GetIsVip() && ((car->GetCar()->GetIsPreset() && !car->GetCanChangePath() && time >= car->GetRealTime() - 50)))// || (time >= m_lastPresetVipCarEstimateArriveTime && !car->GetCar()->GetIsPreset() && !car->GetIsInGarage())))
                 {
                     noPreVipCar = false;
                     auto& carTrace = car->GetTrace();
@@ -561,13 +560,13 @@ void SchedulerFloyd::DoUpdate(int& time, SimScenario& scenario)
     }
 
     for(uint i = 0; i < scenario.Cars().size(); ++i)
-	{
+    {
         SimCar* car = scenario.Cars()[i];
         if (car == 0) continue;
         auto& carTrace = car->GetTrace();
         if (car->GetCar()->GetFromCrossId() != car->GetCar()->GetToCrossId()
             && !car->GetIsReachedGoal()
-            && (!car->GetCar()->GetIsPreset() || car->GetIsForceOutput())
+            && (!car->GetCar()->GetIsPreset() || car->GetCanChangePath())
             && !m_deadLockSolver.IsCarTraceLockedInBackup(car))
         {
             int from = car->GetCar()->GetFromCrossId();
