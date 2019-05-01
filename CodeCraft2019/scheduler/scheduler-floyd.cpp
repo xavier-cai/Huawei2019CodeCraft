@@ -208,8 +208,6 @@ void SchedulerFloyd::RefreshNotArrivedPresetCars(SimScenario& scenario)
             m_notArrivedProtectedCars.insert(car->GetCar()->GetId());
     }
 }
-const SimCar* needPrintCar = 0;
-
 
 void SchedulerFloyd::HandleSimCarScheduled(const SimCar* car)
 {
@@ -222,7 +220,6 @@ void SchedulerFloyd::HandleSimCarScheduled(const SimCar* car)
         if (car->GetIsLockOnNextRoad())
         {
             maxWaitTime = waitTime;
-            needPrintCar = car;
         }
     }
 }
@@ -769,35 +766,6 @@ void SchedulerFloyd::DoHandleGetoutGarage(const int& time, SimScenario& scenario
 #include "random.h"
 void SchedulerFloyd::DoHandleResult(int& time, SimScenario& scenario, Simulator::UpdateResult& result)
 {
-    if (needPrintCar != 0)
-    {
-        LOG("waitTime =  " << needPrintCar->GetLastUpdateTime() - needPrintCar->GetLockOnNextRoadTime() << " car in road : " << needPrintCar->GetCurrentRoad()->GetId() << " Cross = " << needPrintCar->GetCurrentCross()->GetId() << " next road = " << needPrintCar->GetNextRoadId());
-        Cross* busyCross = needPrintCar->GetCurrentCross();
-        Simulator::Instance.PrintCrossState(time, scenario, busyCross);
-        for (int i = (int)Cross::NORTH; i <= (int)Cross::WEST; i++)
-        {
-            Road* road = busyCross->GetRoad((Cross::DirectionType)i);
-            if (road != 0)
-            {
-                SimRoad* roadLink = scenario.Roads()[road->GetId()];
-                if (roadLink->GetRoad()->CanStartFrom(busyCross->GetId()))
-                {
-                    Cross* peerlink = roadLink->GetRoad()->GetPeerCross(busyCross);
-                    //wsq
-                    int carAver = 0;
-                    int roadLines = roadLink->GetRoad()->GetLanes();
-                    for (int j = 1; j <= roadLines; j++)
-                    {
-                        carAver += roadLink->GetCarsFrom(j, busyCross->GetId()).size();
-                    }
-                    LOG("roadId =  " << road->GetId() << " Sum =  " << carAver << " Lanes = " << roadLines);
-                }
-            }
-        }
-
-        needPrintCar = 0;
-    }
-
     if (result.Conflict)
     {
         if (m_deadLockSolver.HandleDeadLock(time, scenario))
