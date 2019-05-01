@@ -6,7 +6,7 @@ bin/Realse目录下的可执行文件可以直接运行，并默认使用同目�
 
 ## 基本界面
 
-![can not find image](./Visualization/screenshot/screenshot.png)
+![can not find image](./screenshot/screenshot.png)
 
 ## 基本功能和特性
 
